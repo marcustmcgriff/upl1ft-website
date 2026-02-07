@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Instagram, Twitter, Facebook } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -24,9 +25,15 @@ export function Footer() {
           <div className="col-span-1">
             <Link
               href="/"
-              className="block text-3xl font-display tracking-wider text-accent gold-glow mb-4"
+              className="block gold-glow mb-4"
             >
-              UPL1FT
+              <Image
+                src="/images/upl1ft-logo.png"
+                alt="UPL1FT"
+                width={120}
+                height={120}
+                className="h-12 w-auto"
+              />
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
               Strength. Discipline. Faith. Streetwear for the battle-hardened believer.

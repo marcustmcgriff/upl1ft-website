@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./MobileNav";
@@ -34,9 +35,16 @@ export function Header() {
             {/* Logo */}
             <Link
               href="/"
-              className="text-2xl font-display tracking-wider text-accent gold-glow-hover"
+              className="gold-glow-hover"
             >
-              UPL1FT
+              <Image
+                src="/images/upl1ft-logo.png"
+                alt="UPL1FT"
+                width={120}
+                height={120}
+                className="h-10 w-auto"
+                priority
+              />
             </Link>
 
             {/* Desktop Navigation */}

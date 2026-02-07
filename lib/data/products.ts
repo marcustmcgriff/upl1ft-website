@@ -28,6 +28,7 @@ export const products: Product[] = [
     story: '"No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness and peace for those who have been trained by it." - Hebrews 12:11. Comfort is the quiet killer of purpose. Step out of ease and into your calling.',
     images: [
       '/images/products/comfort-kills-potential-front.png',
+      '/images/products/comfort-kills-potential-back.png',
     ],
     category: 'tees',
     tags: ['discipline', 'growth', 'featured'],
@@ -46,6 +47,7 @@ export const products: Product[] = [
     story: '"But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." - Isaiah 53:5. His suffering was not in vain. Every wound carried purpose. Wear this truth.',
     images: [
       '/images/products/his-pain-our-gain-front.png',
+      '/images/products/his-pain-our-gain-back.png',
     ],
     category: 'tees',
     tags: ['sacrifice', 'redemption', 'scripture'],
@@ -63,6 +65,7 @@ export const products: Product[] = [
     story: '"It is written: Man shall not live on bread alone, but on every word that comes from the mouth of God." - Matthew 4:4. When temptation came, Jesus answered with Scripture. The Word is your weapon. Carry it boldly.',
     images: [
       '/images/products/it-is-written-front.png',
+      '/images/products/it-is-written-back.png',
     ],
     category: 'tees',
     tags: ['scripture', 'word', 'authority'],

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -57,9 +58,15 @@ export function MobileNav({ isOpen, onClose, navLinks }: MobileNavProps) {
             <Link
               href="/"
               onClick={onClose}
-              className="block text-3xl font-display tracking-wider text-accent gold-glow mb-12"
+              className="block gold-glow mb-12"
             >
-              UPL1FT
+              <Image
+                src="/images/upl1ft-logo.png"
+                alt="UPL1FT"
+                width={120}
+                height={120}
+                className="h-12 w-auto"
+              />
             </Link>
 
             {/* Navigation Links */}
