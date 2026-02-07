@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { products } from "@/lib/data/products";
 import { ProductGrid } from "@/components/product/ProductGrid";
@@ -11,6 +11,14 @@ type SortOption = "featured" | "price-low" | "price-high" | "newest";
 type CategoryFilter = "all" | "tees" | "hoodies" | "bottoms" | "accessories";
 
 export default function ShopPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-12 text-center text-muted-foreground">Loading...</div>}>
+      <ShopContent />
+    </Suspense>
+  );
+}
+
+function ShopContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category") as CategoryFilter | null;
 
