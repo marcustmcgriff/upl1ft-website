@@ -17,6 +17,11 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface CartToastData {
+  product: Product;
+  size: string;
+}
+
 interface CartContextType {
   items: CartItem[];
   cartCount: number;
@@ -25,6 +30,8 @@ interface CartContextType {
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
   clearCart: () => void;
+  toast: CartToastData | null;
+  setToast: (data: CartToastData | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -52,6 +59,7 @@ function saveCart(items: CartItem[]) {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [toast, setToastState] = useState<CartToastData | null>(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -65,6 +73,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       saveCart(items);
     }
   }, [items, hydrated]);
+
+  // Auto-dismiss toast after 4 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToastState(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const setToast = useCallback((data: CartToastData | null) => {
+    setToastState(data);
+  }, []);
 
   const addItem = useCallback(
     (product: Product, size: string, color: string, quantity = 1) => {
@@ -119,7 +139,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, cartCount, cartTotal, addItem, removeItem, updateQuantity, clearCart }}
+      value={{ items, cartCount, cartTotal, addItem, removeItem, updateQuantity, clearCart, toast, setToast }}
     >
       {children}
     </CartContext.Provider>
