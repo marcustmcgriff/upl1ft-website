@@ -7,8 +7,9 @@ import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
-import { ShoppingBag, ChevronLeft, Check } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Check, Lock } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function ProductDetail({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -19,6 +20,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const [showStory, setShowStory] = useState(false);
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const isMembersOnly = product.membersOnly && !user;
 
   const discount = product.compareAtPrice
     ? calculateDiscount(product.price, product.compareAtPrice)
@@ -148,24 +151,43 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           </div>
 
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={handleAddToCart}
-            disabled={!product.inStock || added}
-          >
-            {added ? (
-              <>
-                <Check className="mr-2 h-5 w-5" />
-                Added to Cart
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="mr-2 h-5 w-5" />
-                {product.inStock ? "Add to Cart" : "Out of Stock"}
-              </>
-            )}
-          </Button>
+          {isMembersOnly ? (
+            <div className="space-y-3">
+              <div className="bg-accent/10 border border-accent/30 p-4 text-center">
+                <Lock className="h-5 w-5 text-accent mx-auto mb-2" />
+                <p className="text-sm text-foreground font-display uppercase tracking-wider">
+                  Members Only
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sign up for a free account to unlock this product.
+                </p>
+              </div>
+              <Link href="/signup">
+                <Button size="lg" className="w-full">
+                  Join to Unlock
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={handleAddToCart}
+              disabled={!product.inStock || added}
+            >
+              {added ? (
+                <>
+                  <Check className="mr-2 h-5 w-5" />
+                  Added to Cart
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="mr-2 h-5 w-5" />
+                  {product.inStock ? "Add to Cart" : "Out of Stock"}
+                </>
+              )}
+            </Button>
+          )}
 
           {product.story && (
             <div className="border-t border-border pt-6">

@@ -1,9 +1,12 @@
 import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
 
 interface Env {
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
   PRINTFUL_API_TOKEN: string;
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
 }
 
 interface OrderItem {
@@ -12,6 +15,8 @@ interface OrderItem {
   size: string;
   color: string;
   quantity: number;
+  price?: number;
+  image?: string;
 }
 
 // Mapping of product ID + size to Printful sync variant ID
@@ -23,8 +28,13 @@ const VARIANT_MAP: Record<string, Record<string, number>> = {
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-  const { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, PRINTFUL_API_TOKEN } =
-    context.env;
+  const {
+    STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET,
+    PRINTFUL_API_TOKEN,
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+  } = context.env;
 
   const stripe = new Stripe(STRIPE_SECRET_KEY, {
     apiVersion: "2025-03-31.basil",
@@ -86,45 +96,131 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         })
         .filter(Boolean);
 
-      if (printfulItems.length === 0) {
-        console.error("No valid Printful items - variant mapping incomplete");
-        // Still return 200 to acknowledge webhook
-        return new Response("OK", { status: 200 });
+      // Create Printful order
+      let printfulOrderId: string | null = null;
+
+      if (printfulItems.length > 0) {
+        const printfulOrder = {
+          recipient: {
+            name: shipping.name || "Customer",
+            address1: shipping.address.line1 || "",
+            address2: shipping.address.line2 || "",
+            city: shipping.address.city || "",
+            state_code: shipping.address.state || "",
+            country_code: shipping.address.country || "US",
+            zip: shipping.address.postal_code || "",
+            email: session.customer_details?.email || "",
+          },
+          items: printfulItems,
+        };
+
+        const printfulResponse = await fetch(
+          "https://api.printful.com/orders",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(printfulOrder),
+          }
+        );
+
+        const printfulResult = await printfulResponse.json();
+
+        if (!printfulResponse.ok) {
+          console.error("Printful order creation failed:", printfulResult);
+        } else {
+          console.log("Printful order created:", printfulResult);
+          printfulOrderId = printfulResult?.result?.id?.toString() || null;
+        }
       }
 
-      // Create Printful order
-      const printfulOrder = {
-        recipient: {
-          name: shipping.name || "Customer",
-          address1: shipping.address.line1 || "",
-          address2: shipping.address.line2 || "",
-          city: shipping.address.city || "",
-          state_code: shipping.address.state || "",
-          country_code: shipping.address.country || "US",
-          zip: shipping.address.postal_code || "",
-          email: session.customer_details?.email || "",
-        },
-        items: printfulItems,
-      };
+      // Save order to Supabase
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      const printfulResponse = await fetch(
-        "https://api.printful.com/orders",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(printfulOrder),
+        // Find user by metadata user_id or by email match
+        let userId: string | null = session.metadata?.user_id || null;
+        const customerEmail = session.customer_details?.email;
+
+        if (!userId && customerEmail) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("email", customerEmail)
+            .single();
+          userId = profile?.id || null;
         }
-      );
 
-      const printfulResult = await printfulResponse.json();
+        const { error: insertError } = await supabase.from("orders").insert({
+          user_id: userId || null,
+          stripe_session_id: session.id,
+          stripe_payment_intent_id:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : null,
+          printful_order_id: printfulOrderId,
+          status: "confirmed",
+          items: orderItems.map((item) => ({
+            productId: item.productId,
+            name: item.name,
+            size: item.size,
+            color: item.color,
+            quantity: item.quantity,
+            price: item.price || 4000,
+            image: item.image || "",
+          })),
+          subtotal: session.amount_subtotal || 0,
+          shipping: 0,
+          discount_amount: session.total_details?.amount_discount || 0,
+          total: session.amount_total || 0,
+          discount_code: session.metadata?.discount_code || null,
+          shipping_name: shipping.name,
+          shipping_address: {
+            line1: shipping.address.line1 || "",
+            line2: shipping.address.line2 || "",
+            city: shipping.address.city || "",
+            state: shipping.address.state || "",
+            postal_code: shipping.address.postal_code || "",
+            country: shipping.address.country || "US",
+          },
+          customer_email: customerEmail || null,
+        });
 
-      if (!printfulResponse.ok) {
-        console.error("Printful order creation failed:", printfulResult);
-      } else {
-        console.log("Printful order created:", printfulResult);
+        if (insertError) {
+          console.error("Failed to save order to Supabase:", insertError);
+        } else {
+          console.log("Order saved to Supabase");
+        }
+
+        // Record discount redemption if applicable
+        if (session.metadata?.discount_code) {
+          const { data: discountData } = await supabase
+            .from("discount_codes")
+            .select("id, current_uses")
+            .eq("code", session.metadata.discount_code)
+            .single();
+
+          if (discountData) {
+            await supabase
+              .from("discount_codes")
+              .update({ current_uses: discountData.current_uses + 1 })
+              .eq("id", discountData.id);
+
+            const { data: savedOrder } = await supabase
+              .from("orders")
+              .select("id")
+              .eq("stripe_session_id", session.id)
+              .single();
+
+            await supabase.from("discount_redemptions").insert({
+              discount_code_id: discountData.id,
+              user_id: userId || null,
+              order_id: savedOrder?.id || null,
+            });
+          }
+        }
       }
     } catch (err: any) {
       console.error("Error processing webhook:", err);

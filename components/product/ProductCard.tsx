@@ -8,6 +8,7 @@ import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface ProductCardProps {
   product: Product;
@@ -18,6 +19,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState(false);
   const { addItem, setToast } = useCart();
+  const { user } = useAuth();
+  const isMembersOnly = product.membersOnly && !user;
+  const isEarlyAccess = product.earlyAccessUntil && new Date(product.earlyAccessUntil) > new Date();
   const discount = product.compareAtPrice
     ? calculateDiscount(product.price, product.compareAtPrice)
     : 0;
@@ -46,6 +50,12 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
           {/* Badges */}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
+            {product.membersOnly && (
+              <Badge variant="default" className="bg-accent text-accent-foreground">Members Only</Badge>
+            )}
+            {isEarlyAccess && !product.membersOnly && (
+              <Badge variant="default" className="bg-accent text-accent-foreground">Early Access</Badge>
+            )}
             {product.bestseller && (
               <Badge variant="default">Bestseller</Badge>
             )}
@@ -62,17 +72,25 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
             onClick={(e) => e.preventDefault()}
           >
-            <Button
-              className="w-full"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                handleQuickAdd();
-              }}
-              disabled={justAdded}
-            >
-              {justAdded ? "Added!" : selectedSize ? `Quick Add — ${selectedSize}` : "Quick Add"}
-            </Button>
+            {isMembersOnly ? (
+              <Link href="/signup" onClick={(e) => e.stopPropagation()}>
+                <Button className="w-full" size="sm" variant="outline">
+                  Join to Unlock
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                className="w-full"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleQuickAdd();
+                }}
+                disabled={justAdded}
+              >
+                {justAdded ? "Added!" : selectedSize ? `Quick Add — ${selectedSize}` : "Quick Add"}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -113,14 +131,22 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         </div>
 
         {/* Mobile Quick Add - Always visible on mobile */}
-        <Button
-          className="w-full md:hidden"
-          size="sm"
-          onClick={handleQuickAdd}
-          disabled={justAdded}
-        >
-          {justAdded ? "Added!" : selectedSize ? `Add to Cart — ${selectedSize}` : "Add to Cart"}
-        </Button>
+        {isMembersOnly ? (
+          <Link href="/signup">
+            <Button className="w-full md:hidden" size="sm" variant="outline">
+              Join to Unlock
+            </Button>
+          </Link>
+        ) : (
+          <Button
+            className="w-full md:hidden"
+            size="sm"
+            onClick={handleQuickAdd}
+            disabled={justAdded}
+          >
+            {justAdded ? "Added!" : selectedSize ? `Add to Cart — ${selectedSize}` : "Add to Cart"}
+          </Button>
+        )}
       </div>
     </div>
   );

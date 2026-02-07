@@ -1,11 +1,23 @@
+"use client";
+
 import { products } from "@/lib/data/products";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { OrnamentalDivider } from "@/components/ui/ornamental-divider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function FeaturedDrops() {
-  const featuredProducts = products.filter((p) => p.featured).slice(0, 4);
+  const { user } = useAuth();
+  const now = new Date();
+  const featuredProducts = products
+    .filter((p) => p.featured)
+    .filter((p) => {
+      if (p.membersOnly && !user) return false;
+      if (p.earlyAccessUntil && new Date(p.earlyAccessUntil) > now && !user) return false;
+      return true;
+    })
+    .slice(0, 4);
 
   return (
     <section className="relative py-20 overflow-hidden">

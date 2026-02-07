@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { products } from "@/lib/data/products";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { ChevronDown } from "lucide-react";
 
 type SortOption = "featured" | "price-low" | "price-high" | "newest";
@@ -21,6 +22,7 @@ export default function ShopPage() {
 function ShopContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category") as CategoryFilter | null;
+  const { user } = useAuth();
 
   const [category, setCategory] = useState<CategoryFilter>(categoryParam || "all");
   const [sort, setSort] = useState<SortOption>("featured");
@@ -28,6 +30,14 @@ function ShopContent() {
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
+
+    // Filter out members-only products for non-members
+    const now = new Date();
+    filtered = filtered.filter((p) => {
+      if (p.membersOnly && !user) return false;
+      if (p.earlyAccessUntil && new Date(p.earlyAccessUntil) > now && !user) return false;
+      return true;
+    });
 
     // Filter by category
     if (category !== "all") {

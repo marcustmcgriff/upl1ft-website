@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { X } from "lucide-react";
+import { X, User, Package, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ isOpen, onClose, navLinks }: MobileNavProps) {
+  const { user, signOut } = useAuth();
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -88,6 +91,58 @@ export function MobileNav({ isOpen, onClose, navLinks }: MobileNavProps) {
                 </motion.div>
               ))}
             </nav>
+
+            {/* Account Section */}
+            <div className="mt-12 pt-6 border-t border-border">
+              {user ? (
+                <div className="flex flex-col gap-4">
+                  <Link
+                    href="/account"
+                    onClick={onClose}
+                    className="flex items-center gap-3 text-foreground hover:text-accent transition-colors"
+                  >
+                    <User className="h-5 w-5" />
+                    <span className="text-sm uppercase tracking-wider">My Account</span>
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    onClick={onClose}
+                    className="flex items-center gap-3 text-foreground hover:text-accent transition-colors"
+                  >
+                    <Package className="h-5 w-5" />
+                    <span className="text-sm uppercase tracking-wider">Orders</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      onClose();
+                    }}
+                    className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <LogOut className="h-5 w-5" />
+                    <span className="text-sm uppercase tracking-wider">Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  <Link
+                    href="/login"
+                    onClick={onClose}
+                    className="flex items-center gap-3 text-foreground hover:text-accent transition-colors"
+                  >
+                    <User className="h-5 w-5" />
+                    <span className="text-sm uppercase tracking-wider">Sign In</span>
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={onClose}
+                    className="text-sm uppercase tracking-wider text-accent hover:underline"
+                  >
+                    Join the Movement
+                  </Link>
+                </div>
+              )}
+            </div>
           </motion.div>
         </>
       )}

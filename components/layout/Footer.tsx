@@ -6,15 +6,48 @@ import { Instagram, Twitter, Facebook } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Footer() {
   const [email, setEmail] = useState("");
+  const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [newsletterMessage, setNewsletterMessage] = useState("");
+  const { session } = useAuth();
 
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement newsletter signup
-    console.log("Newsletter signup:", email);
-    setEmail("");
+    setNewsletterStatus("loading");
+    setNewsletterMessage("");
+
+    try {
+      const response = await fetch("/api/newsletter-subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setNewsletterStatus("success");
+        setNewsletterMessage(data.message || "Subscribed!");
+        setEmail("");
+        setTimeout(() => setNewsletterStatus("idle"), 4000);
+      } else {
+        setNewsletterStatus("error");
+        setNewsletterMessage(data.error || "Something went wrong.");
+        setTimeout(() => setNewsletterStatus("idle"), 3000);
+      }
+    } catch {
+      setNewsletterStatus("error");
+      setNewsletterMessage("Failed to subscribe.");
+      setTimeout(() => setNewsletterStatus("idle"), 3000);
+    }
   };
 
   return (
@@ -145,11 +178,27 @@ export function Footer() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={newsletterStatus === "loading"}
                 className="w-full"
               />
-              <Button type="submit" className="w-full" size="sm">
-                Subscribe
+              <Button
+                type="submit"
+                className="w-full"
+                size="sm"
+                disabled={newsletterStatus === "loading"}
+              >
+                {newsletterStatus === "loading"
+                  ? "Subscribing..."
+                  : newsletterStatus === "success"
+                  ? "Subscribed!"
+                  : "Subscribe"}
               </Button>
+              {newsletterStatus === "success" && (
+                <p className="text-accent text-xs">{newsletterMessage}</p>
+              )}
+              {newsletterStatus === "error" && (
+                <p className="text-red-500 text-xs">{newsletterMessage}</p>
+              )}
             </form>
 
             {/* Social Links */}

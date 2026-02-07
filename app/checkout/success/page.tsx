@@ -4,10 +4,12 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { CheckCircle } from "lucide-react";
 
 export default function CheckoutSuccessPage() {
   const { clearCart } = useCart();
+  const { user } = useAuth();
 
   // Clear cart on mount (successful payment)
   useEffect(() => {
@@ -47,11 +49,19 @@ export default function CheckoutSuccessPage() {
           <Link href="/shop">
             <Button size="lg">Continue Shopping</Button>
           </Link>
-          <Link href="/">
-            <Button variant="outline" size="lg">
-              Back to Home
-            </Button>
-          </Link>
+          {user ? (
+            <Link href="/account/orders">
+              <Button variant="outline" size="lg">
+                View Your Orders
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/">
+              <Button variant="outline" size="lg">
+                Back to Home
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>

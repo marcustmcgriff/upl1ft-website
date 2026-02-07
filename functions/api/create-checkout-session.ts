@@ -1,8 +1,11 @@
 import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
 
 interface Env {
   STRIPE_SECRET_KEY: string;
   SITE_URL: string;
+  SUPABASE_URL: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
 }
 
 interface CartItem {
@@ -16,7 +19,8 @@ interface CartItem {
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-  const { STRIPE_SECRET_KEY, SITE_URL } = context.env;
+  const { STRIPE_SECRET_KEY, SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } =
+    context.env;
 
   if (!STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: "Stripe not configured" }), {
@@ -30,8 +34,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   });
 
   try {
-    const body = (await context.request.json()) as { items: CartItem[] };
-    const { items } = body;
+    const body = (await context.request.json()) as {
+      items: CartItem[];
+      discountCode?: string;
+    };
+    const { items, discountCode } = body;
 
     if (!items || items.length === 0) {
       return new Response(JSON.stringify({ error: "Cart is empty" }), {
@@ -41,6 +48,61 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     const origin = SITE_URL || "https://upl1ft.org";
+
+    // Extract user ID from auth header if present
+    let userId: string | null = null;
+    const authHeader = context.request.headers.get("Authorization");
+    if (
+      authHeader?.startsWith("Bearer ") &&
+      SUPABASE_URL &&
+      SUPABASE_SERVICE_ROLE_KEY
+    ) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const token = authHeader.split(" ")[1];
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
+    // Validate and apply discount code if provided
+    let discounts: Stripe.Checkout.SessionCreateParams.Discount[] = [];
+    let validatedDiscountCode = "";
+
+    if (discountCode && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      const { data: discount } = await supabase
+        .from("discount_codes")
+        .select("*")
+        .eq("code", discountCode.toUpperCase().trim())
+        .eq("active", true)
+        .single();
+
+      if (discount) {
+        const now = new Date();
+        const notExpired =
+          !discount.expires_at || new Date(discount.expires_at) > now;
+        const started =
+          !discount.starts_at || new Date(discount.starts_at) <= now;
+        const hasUses =
+          discount.max_uses === null ||
+          discount.current_uses < discount.max_uses;
+        const memberOk = !discount.members_only || userId;
+
+        if (notExpired && started && hasUses && memberOk) {
+          const coupon = await stripe.coupons.create({
+            ...(discount.discount_type === "percentage"
+              ? { percent_off: discount.discount_value }
+              : { amount_off: discount.discount_value, currency: "usd" }),
+            duration: "once",
+            name: discount.code,
+          });
+          discounts = [{ coupon: coupon.id }];
+          validatedDiscountCode = discount.code;
+        }
+      }
+    }
 
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
       items.map((item) => ({
@@ -64,6 +126,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items,
+      ...(discounts.length > 0 ? { discounts } : {}),
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
@@ -88,8 +151,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             size: item.size,
             color: item.color,
             quantity: item.quantity,
+            price: Math.round(item.price * 100),
+            image: item.image,
           }))
         ),
+        user_id: userId || "",
+        discount_code: validatedDiscountCode,
       },
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart?canceled=true`,

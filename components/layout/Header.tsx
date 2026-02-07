@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, ShoppingBag, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./MobileNav";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Header() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { cartCount: cartItemCount } = useCart();
+  const { user } = useAuth();
 
   const navLinks = [
     { href: "/shop", label: "Shop" },
@@ -60,17 +62,24 @@ export function Header() {
               ))}
             </nav>
 
-            {/* Cart Button */}
-            <Link href="/cart" className="relative">
-              <Button variant="ghost" size="icon" aria-label="Shopping cart">
-                <ShoppingBag className="h-5 w-5" />
-                {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-bold">
-                    {cartItemCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+            {/* Account + Cart */}
+            <div className="flex items-center gap-1">
+              <Link href={user ? "/account" : "/login"}>
+                <Button variant="ghost" size="icon" aria-label={user ? "My account" : "Sign in"}>
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/cart" className="relative">
+                <Button variant="ghost" size="icon" aria-label="Shopping cart">
+                  <ShoppingBag className="h-5 w-5" />
+                  {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-bold">
+                      {cartItemCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>

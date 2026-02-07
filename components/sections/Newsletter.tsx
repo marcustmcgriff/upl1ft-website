@@ -3,21 +3,48 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Newsletter() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const { session } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
+    setMessage("");
 
-    // TODO: Implement newsletter API call
-    setTimeout(() => {
-      setStatus("success");
-      setEmail("");
+    try {
+      const response = await fetch("/api/newsletter-subscribe", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStatus("success");
+        setMessage(data.message || "Welcome to the movement!");
+        setEmail("");
+        setTimeout(() => setStatus("idle"), 4000);
+      } else {
+        setStatus("error");
+        setMessage(data.error || "Something went wrong.");
+        setTimeout(() => setStatus("idle"), 3000);
+      }
+    } catch {
+      setStatus("error");
+      setMessage("Failed to subscribe. Please try again.");
       setTimeout(() => setStatus("idle"), 3000);
-    }, 1000);
+    }
   };
 
   return (
@@ -74,7 +101,12 @@ export function Newsletter() {
 
           {status === "success" && (
             <p className="text-accent text-sm mt-4">
-              Welcome to the movement. Check your email.
+              {message || "Welcome to the movement. Check your email."}
+            </p>
+          )}
+          {status === "error" && (
+            <p className="text-red-400 text-sm mt-4">
+              {message || "Something went wrong. Please try again."}
             </p>
           )}
         </div>

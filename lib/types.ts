@@ -14,6 +14,8 @@ export interface Product {
   featured: boolean;
   inStock: boolean;
   bestseller?: boolean;
+  membersOnly?: boolean;
+  earlyAccessUntil?: string; // ISO date string — visible only to members before this date
 }
 
 export interface CartItem {

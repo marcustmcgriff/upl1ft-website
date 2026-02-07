@@ -4,14 +4,68 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCart } from "@/components/cart/CartProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { formatPrice } from "@/lib/utils";
-import { ShoppingBag, Lock, ChevronLeft } from "lucide-react";
+import { ShoppingBag, Lock, ChevronLeft, Tag, X } from "lucide-react";
 
 export default function CheckoutPage() {
   const { items, cartTotal } = useCart();
+  const { user, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Discount code state
+  const [discountInput, setDiscountInput] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    discount_amount: number;
+    description: string;
+  } | null>(null);
+  const [discountError, setDiscountError] = useState("");
+  const [discountLoading, setDiscountLoading] = useState(false);
+
+  const subtotalCents = Math.round(cartTotal * 100);
+  const discountAmountCents = appliedDiscount?.discount_amount || 0;
+  const totalCents = subtotalCents - discountAmountCents;
+
+  const handleApplyDiscount = async () => {
+    if (!discountInput.trim()) return;
+    setDiscountError("");
+    setDiscountLoading(true);
+
+    try {
+      const response = await fetch("/api/validate-discount", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          code: discountInput.trim(),
+          subtotal: subtotalCents,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        setAppliedDiscount(data);
+        setDiscountInput("");
+      } else {
+        setDiscountError(data.error || "Invalid code");
+      }
+    } catch {
+      setDiscountError("Failed to validate code");
+    }
+
+    setDiscountLoading(false);
+  };
 
   const handleCheckout = async () => {
     setLoading(true);
@@ -20,7 +74,12 @@ export default function CheckoutPage() {
     try {
       const response = await fetch("/api/create-checkout-session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
         body: JSON.stringify({
           items: items.map((item) => ({
             productId: item.product.id,
@@ -31,6 +90,7 @@ export default function CheckoutPage() {
             quantity: item.quantity,
             image: item.product.images[0],
           })),
+          discountCode: appliedDiscount?.code || undefined,
         }),
       });
 
@@ -85,6 +145,14 @@ export default function CheckoutPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Order Review */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Auth status */}
+          {user && (
+            <div className="bg-accent/5 border border-accent/20 p-3 text-sm">
+              Signed in as{" "}
+              <span className="text-accent font-semibold">{user.email}</span>
+            </div>
+          )}
+
           <h2 className="text-xl font-display uppercase tracking-wider text-accent">
             Order Review
           </h2>
@@ -143,18 +211,72 @@ export default function CheckoutPage() {
                 <span className="text-muted-foreground">Shipping</span>
                 <span className="text-foreground">Free</span>
               </div>
+              {appliedDiscount && (
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-500">
+                      Discount ({appliedDiscount.code})
+                    </span>
+                    <button
+                      onClick={() => setAppliedDiscount(null)}
+                      className="text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span className="text-green-500">
+                    -{formatPrice(discountAmountCents / 100)}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-border pt-4">
               <div className="flex justify-between text-lg font-bold">
                 <span className="text-foreground">Total</span>
-                <span className="text-accent">{formatPrice(cartTotal)}</span>
+                <span className="text-accent">
+                  {formatPrice(totalCents / 100)}
+                </span>
               </div>
             </div>
 
-            {error && (
-              <p className="text-red-500 text-sm">{error}</p>
+            {/* Discount Code Input */}
+            {!appliedDiscount && (
+              <div className="border-t border-border pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    Discount code
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter code"
+                    value={discountInput}
+                    onChange={(e) =>
+                      setDiscountInput(e.target.value.toUpperCase())
+                    }
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && handleApplyDiscount()
+                    }
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleApplyDiscount}
+                    disabled={discountLoading || !discountInput.trim()}
+                  >
+                    {discountLoading ? "..." : "Apply"}
+                  </Button>
+                </div>
+                {discountError && (
+                  <p className="text-red-500 text-xs mt-1">{discountError}</p>
+                )}
+              </div>
             )}
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <Button
               size="lg"
