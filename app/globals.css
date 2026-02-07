@@ -14,8 +14,6 @@
 
   body {
     @apply bg-background text-foreground font-sans;
-    background-image: url('/images/grain.png');
-    background-repeat: repeat;
     position: relative;
   }
 

@@ -81,6 +81,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         return new Response("OK", { status: 200 });
       }
 
+      const customerEmail = session.customer_details?.email;
+
       // Build Printful order items
       const printfulItems = orderItems
         .map((item) => {
@@ -154,7 +156,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         // Find user by metadata user_id or by email match
         let userId: string | null = session.metadata?.user_id || null;
-        const customerEmail = session.customer_details?.email;
 
         if (!userId && customerEmail) {
           const { data: profile } = await supabase
@@ -237,7 +238,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
 
       // Send order confirmation email
-      const customerEmail = session.customer_details?.email;
       if (customerEmail) {
         await sendOrderConfirmationEmail(context.env, {
           to: customerEmail,

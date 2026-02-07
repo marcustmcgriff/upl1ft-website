@@ -131,6 +131,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       line_items,
       ...(discounts.length > 0 ? { discounts } : {}),
       ...(userEmail ? { customer_email: userEmail } : {}),
+      payment_intent_data: {
+        statement_descriptor: "UPL1FT",
+      },
       shipping_address_collection: {
         allowed_countries: ["US"],
       },

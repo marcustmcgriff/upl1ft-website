@@ -30,14 +30,23 @@ function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function buildEmailHtml(data: OrderEmailData): string {
   const itemsHtml = data.orderItems
     .map(
       (item) => `
       <tr>
         <td style="padding: 12px 0; border-bottom: 1px solid #333;">
-          <strong style="color: #C9A227;">${item.name}</strong><br/>
-          <span style="color: #999; font-size: 13px;">Size: ${item.size} / Color: ${item.color} &times; ${item.quantity}</span>
+          <strong style="color: #C9A227;">${escapeHtml(item.name)}</strong><br/>
+          <span style="color: #999; font-size: 13px;">Size: ${escapeHtml(item.size)} / Color: ${escapeHtml(item.color)} &times; ${item.quantity}</span>
         </td>
         <td style="padding: 12px 0; border-bottom: 1px solid #333; text-align: right; color: #fff;">
           ${formatCents(item.price * item.quantity)}
@@ -52,13 +61,14 @@ function buildEmailHtml(data: OrderEmailData): string {
     `${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postal_code}`,
   ]
     .filter(Boolean)
+    .map(escapeHtml)
     .join("<br/>");
 
   const giftHtml = data.giftMessage
     ? `
     <div style="background: #1a1a1a; padding: 16px; margin: 20px 0; border-left: 3px solid #C9A227;">
       <p style="margin: 0 0 4px 0; font-size: 12px; color: #C9A227; text-transform: uppercase; letter-spacing: 1px;">Gift Message</p>
-      <p style="margin: 0; color: #ccc; font-style: italic;">&ldquo;${data.giftMessage}&rdquo;</p>
+      <p style="margin: 0; color: #ccc; font-style: italic;">&ldquo;${escapeHtml(data.giftMessage)}&rdquo;</p>
     </div>`
     : "";
 
@@ -118,7 +128,7 @@ function buildEmailHtml(data: OrderEmailData): string {
     <div style="background: #111; padding: 24px; margin-bottom: 24px;">
       <h3 style="color: #C9A227; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 12px 0;">Ships To</h3>
       <p style="color: #ccc; margin: 0; line-height: 1.6;">
-        ${data.shippingName}<br/>
+        ${escapeHtml(data.shippingName)}<br/>
         ${addressLines}
       </p>
     </div>
