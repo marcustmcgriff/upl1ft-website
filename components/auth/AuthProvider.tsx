@@ -8,7 +8,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { supabase, supabaseConfigured } from "@/lib/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/supabase/types";
 
@@ -56,15 +56,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state
   useEffect(() => {
-    const initAuth = async () => {
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
+    if (!supabaseConfigured) {
+      setLoading(false);
+      return;
+    }
 
-      if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        await fetchProfile(currentSession.user.id);
+    const initAuth = async () => {
+      try {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          await fetchProfile(currentSession.user.id);
+        }
+      } catch {
+        // Supabase unavailable — continue without auth
       }
       setLoading(false);
     };
