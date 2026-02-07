@@ -32,15 +32,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://uplift.com",
+    url: "https://upl1ft.org",
     title: "UPL1FT | Faith-Based Streetwear",
     description: "Premium streetwear for the battle-hardened believer.",
     siteName: "UPL1FT",
+    images: [
+      {
+        url: "https://upl1ft.org/images/upl1ft-logo.png",
+        width: 1024,
+        height: 1024,
+        alt: "UPL1FT",
+      },
+    ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "UPL1FT | Faith-Based Streetwear",
     description: "Premium streetwear for the battle-hardened believer.",
+    images: ["https://upl1ft.org/images/upl1ft-logo.png"],
   },
 };
 
