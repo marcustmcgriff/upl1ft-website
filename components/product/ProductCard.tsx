@@ -18,7 +18,7 @@ interface ProductCardProps {
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState(false);
-  const { addItem, setToast } = useCart();
+  const { addItem, openDrawer } = useCart();
   const { user } = useAuth();
   const isMembersOnly = product.membersOnly && !user;
   const isEarlyAccess = product.earlyAccessUntil && new Date(product.earlyAccessUntil) > new Date();
@@ -29,7 +29,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   const handleQuickAdd = () => {
     const size = selectedSize || product.sizes[0];
     addItem(product, size, product.colors[0]);
-    setToast({ product, size });
+    openDrawer();
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
   };

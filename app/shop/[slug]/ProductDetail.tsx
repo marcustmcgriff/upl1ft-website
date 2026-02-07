@@ -19,7 +19,7 @@ export function ProductDetail({ product }: { product: Product }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showStory, setShowStory] = useState(false);
   const [added, setAdded] = useState(false);
-  const { addItem } = useCart();
+  const { addItem, openDrawer } = useCart();
   const { user } = useAuth();
   const isMembersOnly = product.membersOnly && !user;
 
@@ -33,6 +33,7 @@ export function ProductDetail({ product }: { product: Product }) {
       return;
     }
     addItem(product, selectedSize, selectedColor);
+    openDrawer();
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

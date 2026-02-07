@@ -32,6 +32,9 @@ interface CartContextType {
   clearCart: () => void;
   toast: CartToastData | null;
   setToast: (data: CartToastData | null) => void;
+  isDrawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -60,6 +63,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToastState] = useState<CartToastData | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -85,6 +89,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const setToast = useCallback((data: CartToastData | null) => {
     setToastState(data);
   }, []);
+
+  const openDrawer = useCallback(() => setIsDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
 
   const addItem = useCallback(
     (product: Product, size: string, color: string, quantity = 1) => {
@@ -139,7 +146,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, cartCount, cartTotal, addItem, removeItem, updateQuantity, clearCart, toast, setToast }}
+      value={{ items, cartCount, cartTotal, addItem, removeItem, updateQuantity, clearCart, toast, setToast, isDrawerOpen, openDrawer, closeDrawer }}
     >
       {children}
     </CartContext.Provider>

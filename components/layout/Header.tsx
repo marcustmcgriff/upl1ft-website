@@ -11,7 +11,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Header() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { cartCount: cartItemCount } = useCart();
+  const { cartCount: cartItemCount, openDrawer } = useCart();
   const { user } = useAuth();
 
   const navLinks = [
@@ -69,8 +69,8 @@ export function Header() {
                   <User className="h-5 w-5" />
                 </Button>
               </Link>
-              <Link href="/cart" className="relative">
-                <Button variant="ghost" size="icon" aria-label="Shopping cart">
+              <div className="relative">
+                <Button variant="ghost" size="icon" aria-label="Shopping cart" onClick={openDrawer}>
                   <ShoppingBag className="h-5 w-5" />
                   {cartItemCount > 0 && (
                     <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-accent text-accent-foreground text-xs flex items-center justify-center font-bold">
@@ -78,7 +78,7 @@ export function Header() {
                     </span>
                   )}
                 </Button>
-              </Link>
+              </div>
             </div>
           </div>
         </div>
