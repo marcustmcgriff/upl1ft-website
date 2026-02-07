@@ -7,7 +7,8 @@ import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
-import { ShoppingBag, ChevronLeft } from "lucide-react";
+import { ShoppingBag, ChevronLeft, Check } from "lucide-react";
+import { useCart } from "@/components/cart/CartProvider";
 
 export function ProductDetail({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -16,6 +17,8 @@ export function ProductDetail({ product }: { product: Product }) {
   );
   const [selectedImage, setSelectedImage] = useState(0);
   const [showStory, setShowStory] = useState(false);
+  const [added, setAdded] = useState(false);
+  const { addItem } = useCart();
 
   const discount = product.compareAtPrice
     ? calculateDiscount(product.price, product.compareAtPrice)
@@ -26,8 +29,9 @@ export function ProductDetail({ product }: { product: Product }) {
       alert("Please select a size");
       return;
     }
-    console.log("Adding to cart:", { product, selectedSize, selectedColor });
-    alert("Added to cart!");
+    addItem(product, selectedSize, selectedColor);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
@@ -148,10 +152,19 @@ export function ProductDetail({ product }: { product: Product }) {
             size="lg"
             className="w-full"
             onClick={handleAddToCart}
-            disabled={!product.inStock}
+            disabled={!product.inStock || added}
           >
-            <ShoppingBag className="mr-2 h-5 w-5" />
-            {product.inStock ? "Add to Cart" : "Out of Stock"}
+            {added ? (
+              <>
+                <Check className="mr-2 h-5 w-5" />
+                Added to Cart
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="mr-2 h-5 w-5" />
+                {product.inStock ? "Add to Cart" : "Out of Stock"}
+              </>
+            )}
           </Button>
 
           {product.story && (
@@ -174,9 +187,9 @@ export function ProductDetail({ product }: { product: Product }) {
           )}
 
           <div className="border-t border-border pt-6 space-y-4 text-sm text-muted-foreground">
-            <p>• Free shipping on orders over $100</p>
-            <p>• Ships within 2-3 business days</p>
-            <p>• 30-day returns on unworn items</p>
+            <p>• Free shipping on all orders</p>
+            <p>• Ships within 5-10 business days</p>
+            <p>• US shipping only</p>
           </div>
         </div>
       </div>

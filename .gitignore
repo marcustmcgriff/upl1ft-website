@@ -52,3 +52,7 @@ hero-snapshot.md
 
 # dev scripts
 start-dev.bat
+
+# cloudflare
+.dev.vars
+wrangler.toml

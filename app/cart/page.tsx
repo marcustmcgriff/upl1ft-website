@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Minus, Plus, X } from "lucide-react";
+import { useCart } from "@/components/cart/CartProvider";
+import { formatPrice } from "@/lib/utils";
 
 export default function CartPage() {
-  // TODO: Implement cart state management
-  const cartItems: any[] = [];
+  const { items, cartTotal, removeItem, updateQuantity } = useCart();
 
-  if (cartItems.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="container mx-auto px-4 py-20">
         <div className="max-w-md mx-auto text-center">
@@ -36,7 +38,73 @@ export default function CartPage() {
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Cart items would go here */}
+          {items.map((item, index) => (
+            <div
+              key={`${item.product.id}-${item.size}-${item.color}`}
+              className="flex gap-4 bg-muted p-4"
+            >
+              {/* Product Image */}
+              <div className="relative w-24 h-32 flex-shrink-0 bg-background overflow-hidden">
+                <Image
+                  src={item.product.images[0]}
+                  alt={item.product.name}
+                  fill
+                  className="object-cover"
+                  sizes="96px"
+                />
+              </div>
+
+              {/* Product Details */}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-display uppercase tracking-wider text-accent text-sm">
+                      {item.product.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {item.size} / {item.color}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(index)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                    aria-label="Remove item"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between mt-4">
+                  {/* Quantity Controls */}
+                  <div className="flex items-center border border-border">
+                    <button
+                      onClick={() => updateQuantity(index, item.quantity - 1)}
+                      disabled={item.quantity <= 1}
+                      className="p-2 hover:bg-background transition-colors disabled:opacity-50"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="px-4 text-sm font-medium min-w-[2rem] text-center">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(index, item.quantity + 1)}
+                      className="p-2 hover:bg-background transition-colors"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {/* Item Total */}
+                  <span className="text-accent font-bold">
+                    {formatPrice(item.product.price * item.quantity)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Order Summary */}
@@ -49,7 +117,7 @@ export default function CartPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="text-foreground">$0.00</span>
+                <span className="text-foreground">{formatPrice(cartTotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping</span>
@@ -60,7 +128,7 @@ export default function CartPage() {
             <div className="border-t border-border pt-4">
               <div className="flex justify-between text-lg font-bold">
                 <span className="text-foreground">Total</span>
-                <span className="text-accent">$0.00</span>
+                <span className="text-accent">{formatPrice(cartTotal)}</span>
               </div>
             </div>
 

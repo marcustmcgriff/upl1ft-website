@@ -5,10 +5,11 @@ import Link from "next/link";
 import { Menu, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./MobileNav";
+import { useCart } from "@/components/cart/CartProvider";
 
 export function Header() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [cartItemCount] = useState(0); // This would come from cart context/state
+  const { cartCount: cartItemCount } = useCart();
 
   const navLinks = [
     { href: "/shop", label: "Shop" },
