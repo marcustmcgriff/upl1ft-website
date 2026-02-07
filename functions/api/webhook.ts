@@ -15,13 +15,11 @@ interface OrderItem {
 }
 
 // Mapping of product ID + size to Printful sync variant ID
-// These will be populated once products are synced to the Printful store
 const VARIANT_MAP: Record<string, Record<string, number>> = {
-  // Product ID -> { Size -> Printful Sync Variant ID }
-  // "1": { "S": 0, "M": 0, "L": 0, "XL": 0, "2XL": 0, "3XL": 0 },
-  // "2": { "S": 0, "M": 0, "L": 0, "XL": 0, "2XL": 0, "3XL": 0 },
-  // "3": { "S": 0, "M": 0, "L": 0, "XL": 0, "2XL": 0, "3XL": 0 },
-  // "4": { "S": 0, "M": 0, "L": 0, "XL": 0, "2XL": 0, "3XL": 0 },
+  "1": { "S": 5187387218, "M": 5187387219, "L": 5187387220, "XL": 5187387221, "2XL": 5187387222, "3XL": 5187387223 },
+  "2": { "S": 5187387226, "M": 5187387227, "L": 5187387228, "XL": 5187387229, "2XL": 5187387230, "3XL": 5187387231 },
+  "3": { "S": 5187387212, "M": 5187387213, "L": 5187387214, "XL": 5187387215, "2XL": 5187387216, "3XL": 5187387217 },
+  "4": { "S": 5187387240, "M": 5187387241, "L": 5187387242, "XL": 5187387243, "2XL": 5187387244, "3XL": 5187387245 },
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
