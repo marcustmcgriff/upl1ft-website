@@ -202,3 +202,24 @@ ALTER TABLE public.discount_redemptions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own redemptions"
   ON public.discount_redemptions FOR SELECT
   USING (auth.uid() = user_id);
+
+-- ============================================
+-- NEWSLETTER SUBSCRIBERS TABLE
+-- Collects emails even before Mailchimp is configured
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  source TEXT DEFAULT 'website',
+  is_member BOOLEAN DEFAULT false,
+  user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  subscribed_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(email)
+);
+
+ALTER TABLE public.newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role full access on newsletter_subscribers"
+  ON public.newsletter_subscribers
+  FOR ALL
+  USING (auth.role() = 'service_role');

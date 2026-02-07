@@ -36,8 +36,35 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     if (!MAILCHIMP_API_KEY || !MAILCHIMP_LIST_ID || !MAILCHIMP_SERVER_PREFIX) {
+      // Mailchimp not configured yet — save email to Supabase for later import
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+          let userId: string | null = null;
+          let isMember = false;
+          const authHeader = context.request.headers.get("Authorization");
+          if (authHeader) {
+            const token = authHeader.replace("Bearer ", "");
+            const { data: { user } } = await supabase.auth.getUser(token);
+            if (user) {
+              userId = user.id;
+              isMember = true;
+            }
+          }
+
+          await supabase.from("newsletter_subscribers").upsert(
+            { email, source: "website", is_member: isMember, user_id: userId },
+            { onConflict: "email" }
+          );
+        } catch (err) {
+          console.error("Failed to save newsletter subscriber to Supabase:", err);
+        }
+      }
+
       return new Response(
-        JSON.stringify({ success: true, message: "Thanks! We'll notify you when our newsletter launches." }),
+        JSON.stringify({ success: true, message: "Welcome to the movement! You're on the list." }),
         {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
