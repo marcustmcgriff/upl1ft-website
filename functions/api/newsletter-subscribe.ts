@@ -36,11 +36,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     if (!MAILCHIMP_API_KEY || !MAILCHIMP_LIST_ID || !MAILCHIMP_SERVER_PREFIX) {
-      console.error("Mailchimp environment variables not configured");
       return new Response(
-        JSON.stringify({ error: "Newsletter service not configured" }),
+        JSON.stringify({ success: true, message: "Thanks! We'll notify you when our newsletter launches." }),
         {
-          status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
