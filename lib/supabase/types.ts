@@ -30,6 +30,7 @@ export interface Order {
   shipping_name: string | null;
   shipping_address: ShippingAddress | null;
   customer_email: string | null;
+  gift_message: string | null;
   created_at: string;
   updated_at: string;
 }

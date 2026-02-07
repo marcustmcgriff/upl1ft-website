@@ -13,6 +13,7 @@ CREATE TABLE public.profiles (
   member_since TIMESTAMPTZ DEFAULT now(),
   newsletter_subscribed BOOLEAN DEFAULT false,
   mailchimp_subscriber_id TEXT,
+  cart_data JSONB,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -82,6 +83,7 @@ CREATE TABLE public.orders (
   shipping_name TEXT,
   shipping_address JSONB,
   customer_email TEXT,
+  gift_message TEXT,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );

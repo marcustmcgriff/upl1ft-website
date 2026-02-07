@@ -6,9 +6,13 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { Product } from "@/lib/types";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { supabase, supabaseConfigured } from "@/lib/supabase/client";
+import { products as allProducts } from "@/lib/data/products";
 
 export interface CartItem {
   product: Product;
@@ -20,6 +24,14 @@ export interface CartItem {
 export interface CartToastData {
   product: Product;
   size: string;
+}
+
+// Lightweight cart entry for Supabase storage (no full product object)
+interface CartEntry {
+  productId: string;
+  size: string;
+  color: string;
+  quantity: number;
 }
 
 interface CartContextType {
@@ -59,11 +71,62 @@ function saveCart(items: CartItem[]) {
   }
 }
 
+// Convert full CartItems to lightweight entries for Supabase
+function toEntries(items: CartItem[]): CartEntry[] {
+  return items.map((item) => ({
+    productId: item.product.id,
+    size: item.size,
+    color: item.color,
+    quantity: item.quantity,
+  }));
+}
+
+// Hydrate lightweight entries back to full CartItems
+function fromEntries(entries: CartEntry[]): CartItem[] {
+  return entries
+    .map((entry) => {
+      const product = allProducts.find((p) => p.id === entry.productId);
+      if (!product) return null;
+      return {
+        product,
+        size: entry.size,
+        color: entry.color,
+        quantity: entry.quantity,
+      };
+    })
+    .filter(Boolean) as CartItem[];
+}
+
+// Merge two cart arrays, combining quantities for duplicate items
+function mergeCarts(a: CartItem[], b: CartItem[]): CartItem[] {
+  const merged = [...a];
+  for (const item of b) {
+    const existing = merged.findIndex(
+      (m) =>
+        m.product.id === item.product.id &&
+        m.size === item.size &&
+        m.color === item.color
+    );
+    if (existing >= 0) {
+      merged[existing] = {
+        ...merged[existing],
+        quantity: Math.max(merged[existing].quantity, item.quantity),
+      };
+    } else {
+      merged.push(item);
+    }
+  }
+  return merged;
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToastState] = useState<CartToastData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { user } = useAuth();
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextSyncRef = useRef(false);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -71,12 +134,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
+  // Load cart from Supabase when user logs in and merge with local cart
+  useEffect(() => {
+    if (!hydrated || !user || !supabaseConfigured) return;
+
+    const loadRemoteCart = async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("cart_data")
+          .eq("id", user.id)
+          .single();
+
+        if (data?.cart_data && Array.isArray(data.cart_data)) {
+          const remoteItems = fromEntries(data.cart_data as CartEntry[]);
+          setItems((localItems) => {
+            if (localItems.length === 0) return remoteItems;
+            if (remoteItems.length === 0) return localItems;
+            return mergeCarts(localItems, remoteItems);
+          });
+        }
+      } catch {
+        // Supabase unavailable or column doesn't exist yet — continue with local cart
+      }
+    };
+
+    loadRemoteCart();
+  }, [user, hydrated]);
+
   // Persist to localStorage on change (after hydration)
   useEffect(() => {
     if (hydrated) {
       saveCart(items);
     }
   }, [items, hydrated]);
+
+  // Debounced save to Supabase when cart changes
+  useEffect(() => {
+    if (!hydrated || !user || !supabaseConfigured) return;
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false;
+      return;
+    }
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        await supabase
+          .from("profiles")
+          .update({ cart_data: toEntries(items) })
+          .eq("id", user.id);
+      } catch {
+        // Silent fail — localStorage is the primary store
+      }
+    }, 1000);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [items, hydrated, user]);
 
   // Auto-dismiss toast after 4 seconds
   useEffect(() => {

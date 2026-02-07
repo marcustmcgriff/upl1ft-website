@@ -37,8 +37,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const body = (await context.request.json()) as {
       items: CartItem[];
       discountCode?: string;
+      giftMessage?: string;
     };
-    const { items, discountCode } = body;
+    const { items, discountCode, giftMessage } = body;
 
     if (!items || items.length === 0) {
       return new Response(JSON.stringify({ error: "Cart is empty" }), {
@@ -49,8 +50,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const origin = SITE_URL || "https://upl1ft.org";
 
-    // Extract user ID from auth header if present
+    // Extract user ID and email from auth header if present
     let userId: string | null = null;
+    let userEmail: string | null = null;
     const authHeader = context.request.headers.get("Authorization");
     if (
       authHeader?.startsWith("Bearer ") &&
@@ -63,6 +65,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         data: { user },
       } = await supabase.auth.getUser(token);
       userId = user?.id || null;
+      userEmail = user?.email || null;
     }
 
     // Validate and apply discount code if provided
@@ -127,6 +130,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       mode: "payment",
       line_items,
       ...(discounts.length > 0 ? { discounts } : {}),
+      ...(userEmail ? { customer_email: userEmail } : {}),
       shipping_address_collection: {
         allowed_countries: ["US"],
       },
@@ -157,6 +161,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         ),
         user_id: userId || "",
         discount_code: validatedDiscountCode,
+        gift_message: giftMessage?.slice(0, 200) || "",
       },
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart?canceled=true`,

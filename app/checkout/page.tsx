@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatPrice } from "@/lib/utils";
-import { ShoppingBag, Lock, ChevronLeft, Tag, X } from "lucide-react";
+import { ShoppingBag, Lock, ChevronLeft, Tag, X, Gift, Truck } from "lucide-react";
 
 export default function CheckoutPage() {
   const { items, cartTotal } = useCart();
@@ -27,6 +27,30 @@ export default function CheckoutPage() {
   } | null>(null);
   const [discountError, setDiscountError] = useState("");
   const [discountLoading, setDiscountLoading] = useState(false);
+
+  // Gift message state
+  const [giftMessage, setGiftMessage] = useState("");
+  const [showGiftMessage, setShowGiftMessage] = useState(false);
+
+  // Estimated delivery dates (5-10 business days from now)
+  const getEstimatedDelivery = () => {
+    const addBusinessDays = (date: Date, days: number) => {
+      const result = new Date(date);
+      let added = 0;
+      while (added < days) {
+        result.setDate(result.getDate() + 1);
+        const day = result.getDay();
+        if (day !== 0 && day !== 6) added++;
+      }
+      return result;
+    };
+    const now = new Date();
+    const min = addBusinessDays(now, 5);
+    const max = addBusinessDays(now, 10);
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `${fmt(min)} – ${fmt(max)}`;
+  };
 
   const subtotalCents = Math.round(cartTotal * 100);
   const discountAmountCents = appliedDiscount?.discount_amount || 0;
@@ -91,6 +115,7 @@ export default function CheckoutPage() {
             image: item.product.images[0],
           })),
           discountCode: appliedDiscount?.code || undefined,
+          giftMessage: giftMessage.trim() || undefined,
         }),
       });
 
@@ -185,6 +210,44 @@ export default function CheckoutPage() {
                 </span>
               </div>
             ))}
+          </div>
+
+          {/* Gift Message */}
+          <div className="bg-muted p-4">
+            <button
+              onClick={() => setShowGiftMessage(!showGiftMessage)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
+            >
+              <Gift className="h-4 w-4" />
+              <span>{showGiftMessage ? "Remove gift message" : "Add a gift message (free)"}</span>
+            </button>
+            {showGiftMessage && (
+              <div className="mt-3">
+                <textarea
+                  placeholder="Write a personal message to include with this order..."
+                  value={giftMessage}
+                  onChange={(e) => setGiftMessage(e.target.value.slice(0, 200))}
+                  rows={3}
+                  className="w-full bg-background border border-border p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <p className="text-xs text-muted-foreground mt-1 text-right">
+                  {giftMessage.length}/200
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Estimated Delivery */}
+          <div className="flex items-center gap-3 bg-accent/5 border border-accent/20 p-4">
+            <Truck className="h-5 w-5 text-accent flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                Estimated delivery: {getEstimatedDelivery()}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Free shipping on all orders
+              </p>
+            </div>
           </div>
 
           <div className="bg-muted/50 border border-border p-4 text-sm text-muted-foreground">

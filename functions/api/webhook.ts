@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { sendOrderConfirmationEmail } from "./send-order-email";
 
 interface Env {
   STRIPE_SECRET_KEY: string;
@@ -7,6 +8,7 @@ interface Env {
   PRINTFUL_API_TOKEN: string;
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  RESEND_API_KEY: string;
 }
 
 interface OrderItem {
@@ -98,9 +100,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Create Printful order
       let printfulOrderId: string | null = null;
+      const giftMessage = session.metadata?.gift_message || "";
 
       if (printfulItems.length > 0) {
-        const printfulOrder = {
+        const printfulOrder: Record<string, unknown> = {
           recipient: {
             name: shipping.name || "Customer",
             address1: shipping.address.line1 || "",
@@ -112,6 +115,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             email: session.customer_details?.email || "",
           },
           items: printfulItems,
+          ...(giftMessage
+            ? {
+                gift: { subject: "UPL1FT", message: giftMessage },
+                packing_slip: {
+                  email: "support@upl1ft.org",
+                  message: giftMessage,
+                },
+              }
+            : {}),
         };
 
         const printfulResponse = await fetch(
@@ -186,6 +198,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             country: shipping.address.country || "US",
           },
           customer_email: customerEmail || null,
+          gift_message: giftMessage || null,
         });
 
         if (insertError) {
@@ -221,6 +234,34 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             });
           }
         }
+      }
+
+      // Send order confirmation email
+      const customerEmail = session.customer_details?.email;
+      if (customerEmail) {
+        await sendOrderConfirmationEmail(context.env, {
+          to: customerEmail,
+          orderItems: orderItems.map((item) => ({
+            name: item.name,
+            size: item.size,
+            color: item.color,
+            quantity: item.quantity,
+            price: item.price || 4000,
+          })),
+          subtotal: session.amount_subtotal || 0,
+          discountAmount: session.total_details?.amount_discount || 0,
+          total: session.amount_total || 0,
+          shippingName: shipping.name || "Customer",
+          shippingAddress: {
+            line1: shipping.address.line1 || "",
+            line2: shipping.address.line2 || "",
+            city: shipping.address.city || "",
+            state: shipping.address.state || "",
+            postal_code: shipping.address.postal_code || "",
+            country: shipping.address.country || "US",
+          },
+          giftMessage: giftMessage || undefined,
+        });
       }
     } catch (err: any) {
       console.error("Error processing webhook:", err);
