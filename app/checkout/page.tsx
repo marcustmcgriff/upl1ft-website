@@ -1,19 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  EmbeddedCheckoutProvider,
+  EmbeddedCheckout,
+} from "@stripe/react-stripe-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatPrice } from "@/lib/utils";
-import { ShoppingBag, Lock, ChevronLeft, Tag, X, Gift, Truck } from "lucide-react";
+import {
+  ShoppingBag,
+  Lock,
+  ChevronLeft,
+  Tag,
+  X,
+  Gift,
+  Truck,
+} from "lucide-react";
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+);
 
 export default function CheckoutPage() {
   const { items, cartTotal } = useCart();
   const { user, session } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [error, setError] = useState("");
 
   // Discount code state
@@ -91,48 +108,39 @@ export default function CheckoutPage() {
     setDiscountLoading(false);
   };
 
-  const handleCheckout = async () => {
-    setLoading(true);
-    setError("");
+  // Called by EmbeddedCheckoutProvider to create the session and get client secret
+  const fetchClientSecret = useCallback(async () => {
+    const response = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
+      body: JSON.stringify({
+        items: items.map((item) => ({
+          productId: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          size: item.size,
+          color: item.color,
+          quantity: item.quantity,
+          image: item.product.images[0],
+        })),
+        discountCode: appliedDiscount?.code || undefined,
+        giftMessage: giftMessage.trim() || undefined,
+      }),
+    });
 
-    try {
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(session?.access_token
-            ? { Authorization: `Bearer ${session.access_token}` }
-            : {}),
-        },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            productId: item.product.id,
-            name: item.product.name,
-            price: item.product.price,
-            size: item.size,
-            color: item.color,
-            quantity: item.quantity,
-            image: item.product.images[0],
-          })),
-          discountCode: appliedDiscount?.code || undefined,
-          giftMessage: giftMessage.trim() || undefined,
-        }),
-      });
+    const data = await response.json();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Checkout failed");
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err: any) {
-      setError(err.message || "Something went wrong. Please try again.");
-      setLoading(false);
+    if (!response.ok) {
+      throw new Error(data.error || "Checkout failed");
     }
-  };
+
+    return data.clientSecret;
+  }, [items, session?.access_token, appliedDiscount?.code, giftMessage]);
 
   if (items.length === 0) {
     return (
@@ -153,6 +161,42 @@ export default function CheckoutPage() {
     );
   }
 
+  // Payment step — show embedded Stripe checkout
+  if (showPayment) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <button
+          onClick={() => setShowPayment(false)}
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-8 cursor-pointer"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Order Review
+        </button>
+
+        <h1 className="text-4xl md:text-5xl font-display uppercase tracking-wider text-accent gold-glow mb-8">
+          Payment
+        </h1>
+
+        <div className="max-w-3xl mx-auto">
+          <div id="checkout" className="bg-white rounded-lg overflow-hidden">
+            <EmbeddedCheckoutProvider
+              stripe={stripePromise}
+              options={{ fetchClientSecret }}
+            >
+              <EmbeddedCheckout />
+            </EmbeddedCheckoutProvider>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            <Lock className="inline h-3 w-3 mr-1" />
+            Secure checkout powered by Stripe
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Order review step
   return (
     <div className="container mx-auto px-4 py-12">
       <Link
@@ -219,14 +263,20 @@ export default function CheckoutPage() {
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
             >
               <Gift className="h-4 w-4" />
-              <span>{showGiftMessage ? "Remove gift message" : "Add a gift message (free)"}</span>
+              <span>
+                {showGiftMessage
+                  ? "Remove gift message"
+                  : "Add a gift message (free)"}
+              </span>
             </button>
             {showGiftMessage && (
               <div className="mt-3">
                 <textarea
                   placeholder="Write a personal message to include with this order..."
                   value={giftMessage}
-                  onChange={(e) => setGiftMessage(e.target.value.slice(0, 200))}
+                  onChange={(e) =>
+                    setGiftMessage(e.target.value.slice(0, 200))
+                  }
                   rows={3}
                   className="w-full bg-background border border-border p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-accent"
                 />
@@ -249,13 +299,6 @@ export default function CheckoutPage() {
               </p>
             </div>
           </div>
-
-          <div className="bg-muted/50 border border-border p-4 text-sm text-muted-foreground">
-            <p className="flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              Shipping address and payment will be collected securely by Stripe.
-            </p>
-          </div>
         </div>
 
         {/* Order Summary + Pay Button */}
@@ -268,7 +311,9 @@ export default function CheckoutPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="text-foreground">{formatPrice(cartTotal)}</span>
+                <span className="text-foreground">
+                  {formatPrice(cartTotal)}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping</span>
@@ -344,11 +389,13 @@ export default function CheckoutPage() {
             <Button
               size="lg"
               className="w-full"
-              onClick={handleCheckout}
-              disabled={loading}
+              onClick={() => {
+                setError("");
+                setShowPayment(true);
+              }}
             >
               <Lock className="mr-2 h-4 w-4" />
-              {loading ? "Redirecting to Payment..." : "Pay with Stripe"}
+              Continue to Payment
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">

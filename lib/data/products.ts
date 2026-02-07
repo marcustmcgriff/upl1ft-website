@@ -101,6 +101,6 @@ export const testimonials = [
   {
     id: '3',
     name: 'Isaiah M.',
-    quote: 'The Carry Your Cross hoodie is the best piece I own. Heavy, bold, and every detail matters.',
+    quote: 'The It Is Written tee is the best piece I own. Bold design, premium feel, and the message hits every time I put it on.',
   },
 ];

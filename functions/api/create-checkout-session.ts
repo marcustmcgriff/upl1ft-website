@@ -127,6 +127,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }));
 
     const session = await stripe.checkout.sessions.create({
+      ui_mode: "embedded",
       mode: "payment",
       line_items,
       ...(discounts.length > 0 ? { discounts } : {}),
@@ -166,14 +167,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         discount_code: validatedDiscountCode,
         gift_message: giftMessage?.slice(0, 200) || "",
       },
-      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/cart?canceled=true`,
+      return_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ clientSecret: session.client_secret }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (err: any) {
     console.error("Stripe error:", err);
     return new Response(
