@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
 
 type SortOption = "featured" | "price-low" | "price-high" | "newest";
-type CategoryFilter = "all" | "tees" | "hoodies" | "bottoms" | "accessories";
+type CategoryFilter = "all" | "tees";
 
 export default function ShopPage() {
   return (
@@ -76,7 +76,7 @@ function ShopContent() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 pb-6 border-b border-border">
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2">
-          {(["all", "tees", "hoodies", "bottoms", "accessories"] as const).map(
+          {(["all", "tees"] as const).map(
             (cat) => (
               <Button
                 key={cat}

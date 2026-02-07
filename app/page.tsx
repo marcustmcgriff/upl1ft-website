@@ -1,6 +1,5 @@
 import { Hero } from "@/components/sections/Hero";
 import { FeaturedDrops } from "@/components/sections/FeaturedDrops";
-import { CategoryTiles } from "@/components/sections/CategoryTiles";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { Newsletter } from "@/components/sections/Newsletter";
 import type { Metadata } from "next";
@@ -16,7 +15,6 @@ export default function HomePage() {
     <>
       <Hero />
       <FeaturedDrops />
-      <CategoryTiles />
       <Testimonials />
       <Newsletter />
     </>

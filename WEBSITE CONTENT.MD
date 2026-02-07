@@ -5,6 +5,8 @@
 **Brand Name:** UPL1FT
 **Tagline:** Strength. Discipline. Faith.
 **Description:** Streetwear for the battle-hardened believer.
+**Website:** https://upl1ft.org
+**Print-on-Demand:** Printful (products are NOT auto-synced — manual updates required)
 
 ---
 
@@ -42,60 +44,49 @@
 
 **Featured Products:**
 
-### 1. CALM IN CHAOS TEE — $48.00 (was $65.00)
-- **Tags:** Bestseller, -26% off
-- **Description:** Premium heavyweight cotton with distressed baroque print. A reminder that peace exists even in turmoil.
-- **Story:** "Be still, and know that I am God." — Psalm 46:10. When the world rages, the faithful stand unmoved. This piece carries the weight of that truth—calm is not the absence of chaos, but mastery over it.
-- **Sizes:** S, M, L, XL, XXL
-- **Colors:** Black, Washed Black
+### 1. LIVE BY FAITH, NOT BY SIGHT — $40.00
+- **Tags:** Bestseller, Featured
+- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
+- **Color:** Faded Black
+- **Print Placements:** Front, Inside Label
+- **Description:** Oversized faded tee with bold front print. Walk by faith, not by what you see.
+- **Story:** "For we walk by faith, not by sight." — 2 Corinthians 5:7. The world shows you one thing. Faith reveals another. This tee is a declaration—you move by conviction, not by circumstance.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Image:** /images/products/live-by-faith-front.png
 
-### 2. CARRY YOUR CROSS HOODIE — $98.00 (was $125.00)
-- **Tags:** Bestseller, -22% off
-- **Description:** Oversized heavyweight hoodie with embroidered cross detail and cracked marble graphics.
-- **Story:** "Then Jesus said to his disciples, 'Whoever wants to be my disciple must deny themselves and take up their cross and follow me.'" — Matthew 16:24. Strength is not comfort. It's carrying what you must, knowing the burden has purpose.
-- **Sizes:** M, L, XL, XXL
-- **Colors:** Black, Charcoal
+### 2. COMFORT KILLS POTENTIAL — $40.00
+- **Tags:** Bestseller, Featured
+- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
+- **Color:** Faded Black
+- **Print Placements:** Front, Back, Inside Label
+- **Description:** Oversized faded tee with front, back, and inside label prints. Comfort is the enemy of greatness.
+- **Story:** "No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness and peace for those who have been trained by it." — Hebrews 12:11. Comfort is the quiet killer of purpose. Step out of ease and into your calling.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Image:** /images/products/comfort-kills-potential-front.png
 
-### 3. HEAVEN STANDS UNDISTURBED TEE — $52.00
+### 3. HIS PAIN, OUR GAIN — $40.00
 - **Tags:** Featured
-- **Description:** Relaxed fit tee with gilded angel wing graphic. A declaration of eternal peace.
-- **Story:** Earthly storms come and go. Heaven stands eternal, undisturbed. Wear this as a reminder that your foundation is unshakeable.
-- **Sizes:** S, M, L, XL, XXL
-- **Colors:** Black, Washed Charcoal
+- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
+- **Color:** Faded Black
+- **Print Placements:** Front, Back
+- **Description:** Oversized faded tee with front and back print. A tribute to the sacrifice that set us free.
+- **Story:** "But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." — Isaiah 53:5. His suffering was not in vain. Every wound carried purpose. Wear this truth.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Image:** /images/products/his-pain-our-gain-front.png
 
-### 4. RISEN OVERSIZED TEE — $55.00
-- **Tags:** Featured
-- **Description:** Boxy fit with cathedral window graphics and distressed hem.
-- **Story:** "He is not here; he has risen!" — Luke 24:6. Death has no dominion. This is the victory we wear.
-- **Sizes:** M, L, XL, XXL
-- **Colors:** Black, Washed Black
+### 4. IT IS WRITTEN — $40.00
+- **Tags:** Bestseller, Featured
+- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
+- **Color:** Faded Black
+- **Print Placements:** Front, Back, Inside Label
+- **Description:** Oversized faded tee with front, back, and inside label prints. The Word stands forever.
+- **Story:** "It is written: Man shall not live on bread alone, but on every word that comes from the mouth of God." — Matthew 4:4. When temptation came, Jesus answered with Scripture. The Word is your weapon. Carry it boldly.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Image:** /images/products/it-is-written-front.png
 
 **Call to Action:** View All Products → /shop
 
-**Background:** Saint Michael Defeating Satan (st-michael.png) — positioned at center 80% (continuation of Hero image)
-
----
-
-## Shop By Category Section
-
-**Headline:** Shop By Category
-**Subheading:** Find your armor. Every piece built with purpose.
-
-### Categories:
-
-**Tees**
-- Premium heavyweight cotton tees with faith-forward graphics.
-
-**Hoodies**
-- Oversized, heavyweight hoodies for those who carry their faith boldly.
-
-**Bottoms**
-- Tactical and comfortable pants for disciplined living.
-
-**Accessories**
-- Chains, caps, and essentials to complete your armor.
-
-**Background:** Concrete Wall (category-bg.jpg)
+**Background:** Saint Michael Defeating Satan (st-michael.png) — positioned at center 80%
 
 ---
 
@@ -133,54 +124,32 @@
 
 ## Full Product Catalog
 
+All products are Oversized Faded T-Shirts (AS Colour 5082) in Faded Black. Sizes: S, M, L, XL, 2XL, 3XL.
+
 ### Tees
 
-| # | Product | Price | Sale Price | Description |
-|---|---------|-------|------------|-------------|
-| 1 | CALM IN CHAOS TEE | $65.00 | $48.00 | Premium heavyweight cotton with distressed baroque print |
-| 3 | HEAVEN STANDS UNDISTURBED TEE | $52.00 | — | Relaxed fit tee with gilded angel wing graphic |
-| 6 | RISEN OVERSIZED TEE | $55.00 | — | Boxy fit with cathedral window graphics and distressed hem |
-
-### Hoodies
-
-| # | Product | Price | Sale Price | Description |
-|---|---------|-------|------------|-------------|
-| 2 | CARRY YOUR CROSS HOODIE | $125.00 | $98.00 | Oversized heavyweight hoodie with embroidered cross detail |
-| 4 | ARMOR OF GOD CREWNECK | $110.00 | $85.00 | Heavy fleece crewneck with embossed armor details |
-| 7 | WARRIOR PSALM HOODIE | $105.00 | — | Premium heavyweight hoodie with embroidered Psalm 144:1 |
-
-### Bottoms
-
-| # | Product | Price | Sale Price | Description |
-|---|---------|-------|------------|-------------|
-| 5 | DISCIPLINE CARGO PANTS | $125.00 | — | Tactical cargo pants with reinforced knees |
-| 8 | SANCTIFIED JOGGERS | $95.00 | — | Tapered fit joggers with gold zipper details |
-| 10 | SCRIPTURE CARGO SHORTS | $85.00 | — | Utility cargo shorts with embroidered scripture verses |
-
-### Accessories
-
-| # | Product | Price | Sale Price | Description |
-|---|---------|-------|------------|-------------|
-| 9 | FAITH OVER FEAR CHAIN | $65.00 | — | Stainless steel chain with custom engraved pendant, gold finish |
+| # | Product | Price | Bestseller | Print Placements |
+|---|---------|-------|------------|------------------|
+| 1 | LIVE BY FAITH, NOT BY SIGHT | $40.00 | Yes | Front, Inside Label |
+| 2 | COMFORT KILLS POTENTIAL | $40.00 | Yes | Front, Back, Inside Label |
+| 3 | HIS PAIN, OUR GAIN | $40.00 | No | Front, Back |
+| 4 | IT IS WRITTEN | $40.00 | Yes | Front, Back, Inside Label |
 
 ---
 
 ## Product Stories & Scripture References
 
-**CALM IN CHAOS TEE**
-"Be still, and know that I am God." — Psalm 46:10
+**LIVE BY FAITH, NOT BY SIGHT**
+"For we walk by faith, not by sight." — 2 Corinthians 5:7
 
-**CARRY YOUR CROSS HOODIE**
-"Whoever wants to be my disciple must deny themselves and take up their cross and follow me." — Matthew 16:24
+**COMFORT KILLS POTENTIAL**
+"No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness and peace for those who have been trained by it." — Hebrews 12:11
 
-**ARMOR OF GOD CREWNECK**
-"Put on the full armor of God, so that you can take your stand against the devil's schemes." — Ephesians 6:11
+**HIS PAIN, OUR GAIN**
+"But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." — Isaiah 53:5
 
-**RISEN OVERSIZED TEE**
-"He is not here; he has risen!" — Luke 24:6
-
-**WARRIOR PSALM HOODIE**
-"Praise be to the LORD my Rock, who trains my hands for war, my fingers for battle." — Psalm 144:1
+**IT IS WRITTEN**
+"It is written: Man shall not live on bread alone, but on every word that comes from the mouth of God." — Matthew 4:4
 
 ---
 
@@ -188,9 +157,6 @@
 
 ### Shop Links
 - Tees
-- Hoodies
-- Bottoms
-- Accessories
 
 ### Company Links
 - About / The Doctrine
@@ -217,6 +183,16 @@ Join the movement. Get updates on new drops and exclusive content.
 |---------|-------|----------|---------|
 | Hero | st-michael.png | center 25% | from-black/60 via-black/60 to-black/75 |
 | Featured Drops | st-michael.png | center 80% | from-black/70 via-black/40 to-black/70 |
-| Shop By Category | category-bg.jpg | center 0% | from-black/85 via-black/55 to-black/70 |
 | Testimonies | testimonials-bg.png (flipped) | center 0% | from-black/70 via-black/60 to-black/85 |
 | Newsletter | creation-of-adam.png | center 35% | from-black/85 via-black/55 to-black/85 |
+
+---
+
+## Technical Notes
+
+- **Framework:** Next.js with static export (`output: 'export'`)
+- **Hosting:** Cloudflare Pages (upl1ft-website.pages.dev → upl1ft.org)
+- **GitHub:** marcustmcgriff/upl1ft-website
+- **Printful Integration:** Manual only — product data is hardcoded in `lib/data/products.ts`
+- **Images:** Stored locally in `public/images/products/` (downloaded from Printful CDN)
+- **To update products:** Edit `lib/data/products.ts`, replace images in `public/images/products/`, rebuild & deploy
