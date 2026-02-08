@@ -154,6 +154,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+        // Idempotency check — skip if this session was already processed
+        const { data: existingOrder } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("stripe_session_id", session.id)
+          .single();
+
+        if (existingOrder) {
+          console.log("Order already processed for session:", session.id);
+          return new Response("OK", { status: 200 });
+        }
+
         // Find user by metadata user_id or by email match
         let userId: string | null = session.metadata?.user_id || null;
 
@@ -212,15 +224,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         if (session.metadata?.discount_code) {
           const { data: discountData } = await supabase
             .from("discount_codes")
-            .select("id, current_uses")
+            .select("id")
             .eq("code", session.metadata.discount_code)
             .single();
 
           if (discountData) {
-            await supabase
-              .from("discount_codes")
-              .update({ current_uses: discountData.current_uses + 1 })
-              .eq("id", discountData.id);
+            // Atomic increment to avoid race conditions
+            await supabase.rpc("increment_discount_uses", {
+              discount_id: discountData.id,
+            });
 
             const { data: savedOrder } = await supabase
               .from("orders")

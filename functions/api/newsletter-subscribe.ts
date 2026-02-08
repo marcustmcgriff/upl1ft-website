@@ -15,8 +15,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     SUPABASE_SERVICE_ROLE_KEY,
   } = context.env;
 
+  const origin = context.request.headers.get("Origin") || "";
+  const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
   const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
@@ -71,11 +73,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Check if the subscriber is a logged-in member
+    // Check if the subscriber is a logged-in member (verify token)
     let isMember = false;
+    let verifiedUser: { id: string } | null = null;
     const authHeader = context.request.headers.get("Authorization");
-    if (authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-      isMember = true;
+    if (authHeader?.startsWith("Bearer ") && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const token = authHeader.split(" ")[1];
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) {
+        isMember = true;
+        verifiedUser = user;
+      }
     }
 
     // Add subscriber using POST
@@ -127,21 +137,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     }
 
     // Update Supabase profile if user is logged in
-    if (isMember && authHeader && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+    if (isMember && verifiedUser && SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
       try {
         const { createClient } = await import("@supabase/supabase-js");
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        const token = authHeader.replace("Bearer ", "");
-        const {
-          data: { user },
-        } = await supabase.auth.getUser(token);
-
-        if (user) {
-          await supabase
-            .from("profiles")
-            .update({ newsletter_subscribed: true })
-            .eq("id", user.id);
-        }
+        await supabase
+          .from("profiles")
+          .update({ newsletter_subscribed: true })
+          .eq("id", verifiedUser.id);
       } catch (err) {
         console.error("Failed to update profile newsletter status:", err);
       }

@@ -14,14 +14,14 @@ import { useAuth } from "@/components/auth/AuthProvider";
 function OrderDetailContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
-  const { session } = useAuth();
+  const { user, session } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     async function loadOrder() {
-      if (!id) {
+      if (!id || !user?.id) {
         setLoading(false);
         return;
       }
@@ -29,13 +29,14 @@ function OrderDetailContent() {
         .from("orders")
         .select("*")
         .eq("id", id)
+        .eq("user_id", user.id)
         .single();
 
       if (data) setOrder(data as Order);
       setLoading(false);
     }
     loadOrder();
-  }, [id]);
+  }, [id, user?.id]);
 
   const handleRefreshTracking = async () => {
     if (!order) return;

@@ -225,3 +225,17 @@ CREATE POLICY "Service role full access on newsletter_subscribers"
   ON public.newsletter_subscribers
   FOR ALL
   USING (auth.role() = 'service_role');
+
+-- ============================================
+-- ATOMIC DISCOUNT USAGE INCREMENT FUNCTION
+-- Prevents race conditions on concurrent redemptions
+-- ============================================
+CREATE OR REPLACE FUNCTION public.increment_discount_uses(discount_id UUID)
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  UPDATE public.discount_codes
+  SET current_uses = current_uses + 1
+  WHERE id = discount_id;
+$$;

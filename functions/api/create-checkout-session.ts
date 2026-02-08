@@ -18,6 +18,16 @@ interface CartItem {
   image: string;
 }
 
+// Server-side product catalog — single source of truth for prices
+const PRODUCT_CATALOG: Record<string, { name: string; price: number; image: string }> = {
+  "1": { name: "LIVE BY FAITH, NOT BY SIGHT", price: 4000, image: "/images/products/live-by-faith-front.png" },
+  "2": { name: "COMFORT KILLS POTENTIAL", price: 4000, image: "/images/products/comfort-kills-potential-front.png" },
+  "3": { name: "HIS PAIN, OUR GAIN", price: 4000, image: "/images/products/his-pain-our-gain-front.png" },
+  "4": { name: "IT IS WRITTEN", price: 4000, image: "/images/products/it-is-written-front.png" },
+};
+
+const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { STRIPE_SECRET_KEY, SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } =
     context.env;
@@ -107,24 +117,50 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
+    // Validate all items against server-side catalog
+    for (const item of items) {
+      const product = PRODUCT_CATALOG[item.productId];
+      if (!product) {
+        return new Response(
+          JSON.stringify({ error: `Unknown product: ${item.productId}` }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
+        return new Response(
+          JSON.stringify({ error: "Invalid quantity" }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      if (!VALID_SIZES.includes(item.size)) {
+        return new Response(
+          JSON.stringify({ error: `Invalid size: ${item.size}` }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
-      items.map((item) => ({
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: item.name,
-            description: `Size: ${item.size} / Color: ${item.color}`,
-            images: item.image ? [`${origin}${item.image}`] : [],
-            metadata: {
-              product_id: item.productId,
-              size: item.size,
-              color: item.color,
+      items.map((item) => {
+        const product = PRODUCT_CATALOG[item.productId]!;
+        return {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: product.name,
+              description: `Size: ${item.size} / Color: ${item.color}`,
+              images: [`${origin}${product.image}`],
+              metadata: {
+                product_id: item.productId,
+                size: item.size,
+                color: item.color,
+              },
             },
+            unit_amount: product.price, // Server-side price, NOT client-supplied
           },
-          unit_amount: Math.round(item.price * 100),
-        },
-        quantity: item.quantity,
-      }));
+          quantity: item.quantity,
+        };
+      });
 
     const session = await stripe.checkout.sessions.create({
       ui_mode: "embedded",
@@ -153,15 +189,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       ],
       metadata: {
         order_items: JSON.stringify(
-          items.map((item) => ({
-            productId: item.productId,
-            name: item.name,
-            size: item.size,
-            color: item.color,
-            quantity: item.quantity,
-            price: Math.round(item.price * 100),
-            image: item.image,
-          }))
+          items.map((item) => {
+            const product = PRODUCT_CATALOG[item.productId]!;
+            return {
+              productId: item.productId,
+              name: product.name,
+              size: item.size,
+              color: item.color,
+              quantity: item.quantity,
+              price: product.price,
+              image: product.image,
+            };
+          })
         ),
         user_id: userId || "",
         discount_code: validatedDiscountCode,
@@ -177,10 +216,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Stripe error:", err);
     return new Response(
-      JSON.stringify({ error: err.message || "Checkout failed" }),
+      JSON.stringify({ error: "Checkout failed. Please try again." }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },

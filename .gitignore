@@ -56,3 +56,4 @@ start-dev.bat
 # cloudflare
 .dev.vars
 wrangler.toml
+.wrangler/

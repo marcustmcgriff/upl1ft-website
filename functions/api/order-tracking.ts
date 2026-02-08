@@ -10,8 +10,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PRINTFUL_API_TOKEN } =
     context.env;
 
+  const origin = context.request.headers.get("Origin") || "";
+  const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
   const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
