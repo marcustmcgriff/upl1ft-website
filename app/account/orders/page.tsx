@@ -3,26 +3,30 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Package } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/lib/supabase/client";
 import { OrderStatusBadge } from "@/components/account/OrderStatusBadge";
 import type { Order } from "@/lib/supabase/types";
 
 export default function OrdersPage() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadOrders() {
+      if (!user?.id) return;
       const { data } = await supabase
         .from("orders")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (data) setOrders(data as Order[]);
       setLoading(false);
     }
     loadOrders();
-  }, []);
+  }, [user?.id]);
 
   if (loading) {
     return (

@@ -27,6 +27,8 @@ const PRODUCT_CATALOG: Record<string, { name: string; price: number; image: stri
 };
 
 const VALID_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
+const VALID_COLORS = ["Faded Black"];
+const MAX_CART_ITEMS = 20;
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { STRIPE_SECRET_KEY, SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } =
@@ -56,6 +58,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    if (items.length > MAX_CART_ITEMS) {
+      return new Response(
+        JSON.stringify({ error: `Maximum ${MAX_CART_ITEMS} items per order` }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     const origin = SITE_URL || "https://upl1ft.org";
@@ -135,6 +144,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (!VALID_SIZES.includes(item.size)) {
         return new Response(
           JSON.stringify({ error: `Invalid size: ${item.size}` }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      if (!VALID_COLORS.includes(item.color)) {
+        return new Response(
+          JSON.stringify({ error: `Invalid color: ${item.color}` }),
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }

@@ -19,9 +19,11 @@ export default function AddressesPage() {
   );
 
   const loadAddresses = async () => {
+    if (!user?.id) return;
     const { data } = await supabase
       .from("saved_addresses")
       .select("*")
+      .eq("user_id", user.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
 
@@ -31,14 +33,15 @@ export default function AddressesPage() {
 
   useEffect(() => {
     loadAddresses();
-  }, []);
+  }, [user?.id]);
 
   const handleSave = async (data: Partial<SavedAddress>) => {
     if (editingAddress) {
       await supabase
         .from("saved_addresses")
         .update(data)
-        .eq("id", editingAddress.id);
+        .eq("id", editingAddress.id)
+        .eq("user_id", user!.id);
     } else {
       await supabase
         .from("saved_addresses")
@@ -52,7 +55,7 @@ export default function AddressesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this address?")) return;
-    await supabase.from("saved_addresses").delete().eq("id", id);
+    await supabase.from("saved_addresses").delete().eq("id", id).eq("user_id", user!.id);
     await loadAddresses();
   };
 
@@ -67,7 +70,8 @@ export default function AddressesPage() {
     await supabase
       .from("saved_addresses")
       .update({ is_default: true })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", user!.id);
 
     await loadAddresses();
   };

@@ -55,9 +55,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       signature,
       STRIPE_WEBHOOK_SECRET
     );
-  } catch (err: any) {
-    console.error("Webhook signature verification failed:", err.message);
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+  } catch (err: unknown) {
+    console.error("Webhook signature verification failed");
+    return new Response("Webhook signature verification failed", { status: 400 });
   }
 
   if (event.type === "checkout.session.completed") {
@@ -275,8 +275,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           giftMessage: giftMessage || undefined,
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error processing webhook:", err);
+      // Return 500 so Stripe retries on transient failures
+      return new Response("Processing error", { status: 500 });
     }
   }
 

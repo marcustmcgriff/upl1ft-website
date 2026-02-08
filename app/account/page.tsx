@@ -9,16 +9,17 @@ import { OrderStatusBadge } from "@/components/account/OrderStatusBadge";
 import type { Order } from "@/lib/supabase/types";
 
 export default function AccountDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [orderCount, setOrderCount] = useState(0);
 
   useEffect(() => {
     async function loadData() {
-      // Get recent orders
+      if (!user?.id) return;
       const { data: orders, count } = await supabase
         .from("orders")
         .select("*", { count: "exact" })
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(3);
 
@@ -26,7 +27,7 @@ export default function AccountDashboard() {
       if (count !== null) setOrderCount(count);
     }
     loadData();
-  }, []);
+  }, [user?.id]);
 
   return (
     <div className="space-y-8">

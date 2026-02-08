@@ -46,12 +46,29 @@ export default function ProfilePage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters.");
+    if (!currentPassword) {
+      setPasswordError("Current password is required.");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError("Password must be at least 8 characters.");
       return;
     }
 
     setPasswordLoading(true);
+
+    // Verify current password by attempting sign-in
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user!.email!,
+      password: currentPassword,
+    });
+
+    if (verifyError) {
+      setPasswordError("Current password is incorrect.");
+      setPasswordLoading(false);
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
@@ -127,6 +144,18 @@ export default function ProfilePage() {
         <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
           <div>
             <label className="text-xs text-muted-foreground uppercase tracking-wider">
+              Current Password
+            </label>
+            <Input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">
               New Password
             </label>
             <Input
@@ -134,7 +163,7 @@ export default function ProfilePage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
-              minLength={6}
+              minLength={8}
               className="mt-1"
             />
           </div>

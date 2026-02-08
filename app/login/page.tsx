@@ -17,7 +17,11 @@ function LoginContent() {
   const { signIn, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/account";
+  const rawRedirect = searchParams.get("redirect") || "/account";
+  // Prevent open redirect — only allow relative paths starting with /
+  const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+    ? rawRedirect
+    : "/account";
 
   useEffect(() => {
     if (user) {
