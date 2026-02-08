@@ -49,9 +49,8 @@ export const products: Product[] = [
     description: 'Oversized faded tee with front and back print. A tribute to the sacrifice that set us free.',
     story: '"But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." - Isaiah 53:5. His suffering was not in vain. Every wound carried purpose. Wear this truth.',
     images: [
-      'https://files.cdn.printful.com/files/092/092427f62bca24785865352957464049_preview.png',
+      'https://files.cdn.printful.com/files/61b/61b7e02fe750914585486daa680cb914_preview.png',
       'https://files.cdn.printful.com/files/860/8605a23777fd553a65c44041b57e974a_preview.png',
-      'https://files.cdn.printful.com/files/ace/ace77f6196c80c9aef36b8061b5186cf_preview.png',
     ],
     category: 'tees',
     tags: ['sacrifice', 'redemption', 'scripture'],
