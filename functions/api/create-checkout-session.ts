@@ -55,7 +55,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   }
 
   const stripe = new Stripe(STRIPE_SECRET_KEY, {
-    apiVersion: "2025-03-31.basil",
+    apiVersion: "2026-01-28.clover" as any,
   });
 
   try {

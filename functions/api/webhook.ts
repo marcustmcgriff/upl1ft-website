@@ -47,7 +47,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   } = context.env;
 
   const stripe = new Stripe(STRIPE_SECRET_KEY, {
-    apiVersion: "2025-03-31.basil",
+    apiVersion: "2026-01-28.clover" as any,
   });
 
   const signature = context.request.headers.get("stripe-signature");
@@ -97,14 +97,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         return new Response("OK", { status: 200 });
       }
 
-      // Get shipping details
-      const shipping = session.shipping_details;
+      // Get shipping details (2026-01-28.clover moved to collected_information)
+      const sessionAny = session as any;
+      const shipping =
+        sessionAny.collected_information?.shipping_details ||
+        session.shipping_details;
       if (!shipping?.address) {
         console.error("No shipping address in session");
         return new Response("OK", { status: 200 });
       }
 
-      const customerEmail = session.customer_details?.email;
+      const customerEmail =
+        session.customer_details?.email ||
+        sessionAny.collected_information?.email;
       const giftMessage = session.metadata?.gift_message || "";
 
       // Idempotency check BEFORE creating Printful order to prevent duplicates on retry
@@ -167,7 +172,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         };
 
         const printfulResponse = await fetch(
-          "https://api.printful.com/orders",
+          "https://api.printful.com/orders?confirm=true",
           {
             method: "POST",
             headers: {
