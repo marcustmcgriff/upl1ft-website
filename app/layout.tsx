@@ -49,8 +49,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "UPL1FT | Faith-Based Streetwear",
-    description: "Premium streetwear for the battle-hardened believer.",
     images: ["https://upl1ft.org/images/og-image.png"],
   },
 };
