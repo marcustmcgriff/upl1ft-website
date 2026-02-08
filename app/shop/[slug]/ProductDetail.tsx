@@ -7,7 +7,7 @@ import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, calculateDiscount } from "@/lib/utils";
-import { ShoppingBag, ChevronLeft, Check, Lock } from "lucide-react";
+import { ShoppingBag, ChevronLeft, ChevronRight, Check, Lock } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -19,9 +19,11 @@ export function ProductDetail({ product }: { product: Product }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showStory, setShowStory] = useState(false);
   const [added, setAdded] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
   const { addItem, openDrawer } = useCart();
   const { user } = useAuth();
   const isMembersOnly = product.membersOnly && !user;
+  const hasMultipleImages = product.images.length > 1;
 
   const discount = product.compareAtPrice
     ? calculateDiscount(product.price, product.compareAtPrice)
@@ -50,7 +52,24 @@ export function ProductDetail({ product }: { product: Product }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-4">
-          <div className="relative aspect-[3/4] bg-muted overflow-hidden">
+          <div
+            className="relative aspect-[3/4] bg-muted overflow-hidden"
+            onTouchStart={(e) => {
+              if (hasMultipleImages) setTouchStart(e.touches[0].clientX);
+            }}
+            onTouchEnd={(e) => {
+              if (touchStart === null || !hasMultipleImages) return;
+              const diff = touchStart - e.changedTouches[0].clientX;
+              if (Math.abs(diff) > 50) {
+                if (diff > 0 && selectedImage < product.images.length - 1) {
+                  setSelectedImage(selectedImage + 1);
+                } else if (diff < 0 && selectedImage > 0) {
+                  setSelectedImage(selectedImage - 1);
+                }
+              }
+              setTouchStart(null);
+            }}
+          >
             <Image
               src={product.images[selectedImage]}
               alt={product.name}
@@ -63,6 +82,46 @@ export function ProductDetail({ product }: { product: Product }) {
               {product.bestseller && <Badge>Bestseller</Badge>}
               {discount > 0 && <Badge variant="destructive">-{discount}%</Badge>}
             </div>
+
+            {/* Arrow Navigation */}
+            {hasMultipleImages && (
+              <>
+                {selectedImage > 0 && (
+                  <button
+                    onClick={() => setSelectedImage(selectedImage - 1)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                )}
+                {selectedImage < product.images.length - 1 && (
+                  <button
+                    onClick={() => setSelectedImage(selectedImage + 1)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                )}
+
+                {/* Dot Indicators */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                  {product.images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        selectedImage === index
+                          ? "bg-accent w-4"
+                          : "bg-white/60"
+                      }`}
+                      aria-label={`View image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {product.images.length > 1 && (

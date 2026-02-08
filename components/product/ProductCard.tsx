@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Product } from "@/lib/types";
@@ -18,6 +18,9 @@ interface ProductCardProps {
 export function ProductCard({ product, priority = false }: ProductCardProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState(false);
+  const [currentImage, setCurrentImage] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [swiping, setSwiping] = useState(false);
   const { addItem, openDrawer } = useCart();
   const { user } = useAuth();
   const isMembersOnly = product.membersOnly && !user;
@@ -25,6 +28,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   const discount = product.compareAtPrice
     ? calculateDiscount(product.price, product.compareAtPrice)
     : 0;
+  const hasMultipleImages = product.images.length > 1;
 
   const handleQuickAdd = () => {
     const size = selectedSize || product.sizes[0];
@@ -34,13 +38,49 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     setTimeout(() => setJustAdded(false), 1500);
   };
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!hasMultipleImages) return;
+    setTouchStart(e.touches[0].clientX);
+    setSwiping(false);
+  }, [hasMultipleImages]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStart === null || !hasMultipleImages) return;
+    const diff = Math.abs(e.touches[0].clientX - touchStart);
+    if (diff > 10) setSwiping(true);
+  }, [touchStart, hasMultipleImages]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStart === null || !hasMultipleImages) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentImage < product.images.length - 1) {
+        setCurrentImage(currentImage + 1);
+      } else if (diff < 0 && currentImage > 0) {
+        setCurrentImage(currentImage - 1);
+      }
+    }
+    setTouchStart(null);
+    setTimeout(() => setSwiping(false), 0);
+  }, [touchStart, currentImage, product.images.length, hasMultipleImages]);
+
   return (
     <div className="group relative">
       {/* Image Container - Links to product page */}
-      <Link href={`/shop/${product.slug}`} className="block">
-        <div className="relative aspect-[3/4] bg-muted overflow-hidden mb-4">
+      <Link
+        href={`/shop/${product.slug}`}
+        className="block"
+        onClick={(e) => { if (swiping) e.preventDefault(); }}
+      >
+        <div
+          className="relative aspect-[3/4] bg-muted overflow-hidden mb-4"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <Image
-            src={product.images[0]}
+            src={product.images[currentImage]}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -66,6 +106,28 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               <Badge variant="outline">Featured</Badge>
             )}
           </div>
+
+          {/* Image Dot Indicators */}
+          {hasMultipleImages && (
+            <div className="absolute bottom-14 md:bottom-14 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+              {product.images.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCurrentImage(index);
+                  }}
+                  className={`w-1.5 h-1.5 rounded-full transition-all ${
+                    currentImage === index
+                      ? "bg-accent w-3"
+                      : "bg-white/60"
+                  }`}
+                  aria-label={`View image ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Quick Add Button - Shown on Hover (desktop) */}
           <div
