@@ -11,6 +11,7 @@ export const products: Product[] = [
     images: [
       '/images/products/comfort-kills-potential-front.png',
       '/images/products/comfort-kills-potential-back.png',
+      '/images/products/comfort-kills-potential-side.png',
     ],
     category: 'tees',
     tags: ['discipline', 'growth', 'featured'],
@@ -30,6 +31,7 @@ export const products: Product[] = [
     images: [
       '/images/products/it-is-written-front.png',
       '/images/products/it-is-written-back.png',
+      '/images/products/it-is-written-side.png',
     ],
     category: 'tees',
     tags: ['scripture', 'word', 'authority'],
@@ -49,6 +51,7 @@ export const products: Product[] = [
     images: [
       '/images/products/his-pain-our-gain-front.png',
       '/images/products/his-pain-our-gain-back.png',
+      '/images/products/his-pain-our-gain-side.png',
     ],
     category: 'tees',
     tags: ['sacrifice', 'redemption', 'scripture'],
@@ -66,6 +69,8 @@ export const products: Product[] = [
     story: '"For we walk by faith, not by sight." - 2 Corinthians 5:7. The world shows you one thing. Faith reveals another. This tee is a declaration—you move by conviction, not by circumstance.',
     images: [
       '/images/products/live-by-faith-front.png',
+      '/images/products/live-by-faith-back.png',
+      '/images/products/live-by-faith-side.png',
     ],
     category: 'tees',
     tags: ['faith', 'vision', 'featured'],
