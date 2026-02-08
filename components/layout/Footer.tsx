@@ -180,7 +180,7 @@ export function Footer() {
             {/* Social Links — update URLs when accounts are created */}
             <div className="flex gap-4 mt-6">
               <a
-                href="https://instagram.com/upl1ft"
+                href="https://instagram.com/upl1ft.co"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-accent transition-colors"
