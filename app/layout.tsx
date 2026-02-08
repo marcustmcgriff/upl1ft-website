@@ -40,18 +40,18 @@ export const metadata: Metadata = {
     siteName: "UPL1FT",
     images: [
       {
-        url: "https://upl1ft.org/images/upl1ft-logo.png",
-        width: 1024,
-        height: 1024,
-        alt: "UPL1FT",
+        url: "https://upl1ft.org/images/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "UPL1FT - Faith-Based Streetwear",
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "UPL1FT | Faith-Based Streetwear",
     description: "Premium streetwear for the battle-hardened believer.",
-    images: ["https://upl1ft.org/images/upl1ft-logo.png"],
+    images: ["https://upl1ft.org/images/og-image.png"],
   },
 };
 
