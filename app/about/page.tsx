@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { OrnamentalDivider } from "@/components/ui/ornamental-divider";
 
 export const metadata: Metadata = {
@@ -129,14 +128,10 @@ export default function AboutPage() {
       </div>
 
       {/* Visual Section */}
-      <div className="relative h-[50vh] mb-12 bg-muted">
-        <Image
-          src="/images/about-hero.jpg"
-          alt="UPL1FT aesthetic"
-          fill
-          className="object-cover opacity-60"
-          sizes="100vw"
-        />
+      <div className="relative h-[50vh] mb-12 bg-gradient-to-b from-background via-muted to-background overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(200,162,74,0.3)_0%,transparent_70%)]" />
+        </div>
         <div className="absolute inset-0 flex items-center justify-center">
           <p className="text-3xl md:text-5xl font-display uppercase tracking-wider text-accent gold-glow text-center px-4">
             Carry Your Cross

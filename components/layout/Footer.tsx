@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Instagram, Twitter, Facebook } from "lucide-react";
+import { Instagram } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -81,34 +81,18 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
+                  href="/shop"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  All Products
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/shop?category=tees"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Tees
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?category=hoodies"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Hoodies
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?category=bottoms"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Bottoms
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/shop?category=accessories"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Accessories
                 </Link>
               </li>
             </ul>
@@ -126,14 +110,6 @@ export function Footer() {
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   About / The Doctrine
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/lookbook"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Lookbook
                 </Link>
               </li>
               <li>
@@ -201,34 +177,16 @@ export function Footer() {
               )}
             </form>
 
-            {/* Social Links */}
+            {/* Social Links — update URLs when accounts are created */}
             <div className="flex gap-4 mt-6">
               <a
-                href="https://instagram.com"
+                href="https://instagram.com/upl1ft"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-accent transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-accent transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter className="h-5 w-5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-accent transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="h-5 w-5" />
               </a>
             </div>
           </div>

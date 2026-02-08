@@ -21,6 +21,14 @@ interface OrderItem {
   image?: string;
 }
 
+// Product catalog for reconstructing full item details from compact metadata
+const PRODUCT_CATALOG: Record<string, { name: string; price: number; image: string }> = {
+  "1": { name: "LIVE BY FAITH, NOT BY SIGHT", price: 4000, image: "/images/products/live-by-faith-front.png" },
+  "2": { name: "COMFORT KILLS POTENTIAL", price: 4000, image: "/images/products/comfort-kills-potential-front.png" },
+  "3": { name: "HIS PAIN, OUR GAIN", price: 4000, image: "/images/products/his-pain-our-gain-front.png" },
+  "4": { name: "IT IS WRITTEN", price: 4000, image: "/images/products/it-is-written-front.png" },
+};
+
 // Mapping of product ID + size to Printful sync variant ID
 const VARIANT_MAP: Record<string, Record<string, number>> = {
   "1": { "S": 5187387218, "M": 5187387219, "L": 5187387220, "XL": 5187387221, "2XL": 5187387222, "3XL": 5187387223 },
@@ -64,10 +72,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     const session = event.data.object as Stripe.Checkout.Session;
 
     try {
-      // Parse order items from metadata
-      const orderItems: OrderItem[] = JSON.parse(
-        session.metadata?.order_items || "[]"
-      );
+      // Parse order items from metadata (supports both compact and legacy formats)
+      const rawItems = JSON.parse(session.metadata?.order_items || "[]");
+      const orderItems: OrderItem[] = rawItems.map((item: any) => {
+        // Compact format: {p, s, c, q} — reconstruct full details from catalog
+        if (item.p !== undefined) {
+          const product = PRODUCT_CATALOG[item.p];
+          return {
+            productId: item.p,
+            name: product?.name || "Unknown Product",
+            size: item.s,
+            color: item.c,
+            quantity: item.q,
+            price: product?.price || 4000,
+            image: product?.image || "",
+          };
+        }
+        // Legacy format: full item objects
+        return item;
+      });
 
       if (orderItems.length === 0) {
         console.error("No order items in session metadata");
@@ -82,6 +105,22 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
 
       const customerEmail = session.customer_details?.email;
+      const giftMessage = session.metadata?.gift_message || "";
+
+      // Idempotency check BEFORE creating Printful order to prevent duplicates on retry
+      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: existingOrder } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("stripe_session_id", session.id)
+          .single();
+
+        if (existingOrder) {
+          console.log("Order already processed for session:", session.id);
+          return new Response("OK", { status: 200 });
+        }
+      }
 
       // Build Printful order items
       const printfulItems = orderItems
@@ -102,7 +141,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Create Printful order
       let printfulOrderId: string | null = null;
-      const giftMessage = session.metadata?.gift_message || "";
 
       if (printfulItems.length > 0) {
         const printfulOrder: Record<string, unknown> = {
@@ -153,18 +191,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Save order to Supabase
       if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-        // Idempotency check — skip if this session was already processed
-        const { data: existingOrder } = await supabase
-          .from("orders")
-          .select("id")
-          .eq("stripe_session_id", session.id)
-          .single();
-
-        if (existingOrder) {
-          console.log("Order already processed for session:", session.id);
-          return new Response("OK", { status: 200 });
-        }
 
         // Find user by metadata user_id or by email match
         let userId: string | null = session.metadata?.user_id || null;

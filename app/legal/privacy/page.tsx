@@ -57,7 +57,7 @@ export default function PrivacyPage() {
             </h2>
             <p>
               If you have questions about this Privacy Policy, please contact us
-              at privacy@uplift.com
+              at privacy@upl1ft.org
             </p>
           </section>
         </div>

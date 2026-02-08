@@ -14,7 +14,7 @@ export default function RefundsPage() {
 
         <div className="prose prose-invert max-w-none space-y-6 text-foreground/90">
           <p className="text-sm text-muted-foreground">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: February 7, 2026
           </p>
 
           <section>
@@ -34,7 +34,7 @@ export default function RefundsPage() {
             </h2>
             <p>
               To initiate a return, please contact our customer service team at
-              returns@uplift.com with your order number and reason for return.
+              returns@upl1ft.org with your order number and reason for return.
               We'll provide you with a return shipping label.
             </p>
           </section>

@@ -30,7 +30,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     const { email } = (await context.request.json()) as { email: string };
 
-    if (!email || !email.includes("@")) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email) || email.length > 254) {
       return new Response(JSON.stringify({ error: "Valid email required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },

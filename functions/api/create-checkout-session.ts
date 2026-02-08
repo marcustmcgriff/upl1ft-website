@@ -34,10 +34,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { STRIPE_SECRET_KEY, SITE_URL, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } =
     context.env;
 
+  const origin = SITE_URL || "https://upl1ft.org";
+  const requestOrigin = context.request.headers.get("Origin") || "";
+  const allowedOrigin = requestOrigin === origin ? requestOrigin : origin;
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   if (!STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: "Stripe not configured" }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
 
@@ -56,18 +69,16 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (!items || items.length === 0) {
       return new Response(JSON.stringify({ error: "Cart is empty" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
     if (items.length > MAX_CART_ITEMS) {
       return new Response(
         JSON.stringify({ error: `Maximum ${MAX_CART_ITEMS} items per order` }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    const origin = SITE_URL || "https://upl1ft.org";
 
     // Extract user ID and email from auth header if present
     let userId: string | null = null;
@@ -132,25 +143,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       if (!product) {
         return new Response(
           JSON.stringify({ error: `Unknown product: ${item.productId}` }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
       if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10) {
         return new Response(
           JSON.stringify({ error: "Invalid quantity" }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
       if (!VALID_SIZES.includes(item.size)) {
         return new Response(
           JSON.stringify({ error: `Invalid size: ${item.size}` }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
       if (!VALID_COLORS.includes(item.color)) {
         return new Response(
           JSON.stringify({ error: `Invalid color: ${item.color}` }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
@@ -203,19 +214,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         },
       ],
       metadata: {
+        // Compact format to stay within Stripe's 500-char metadata limit
+        // Webhook reconstructs full item details from product catalog
         order_items: JSON.stringify(
-          items.map((item) => {
-            const product = PRODUCT_CATALOG[item.productId]!;
-            return {
-              productId: item.productId,
-              name: product.name,
-              size: item.size,
-              color: item.color,
-              quantity: item.quantity,
-              price: product.price,
-              image: product.image,
-            };
-          })
+          items.map((item) => ({
+            p: item.productId,
+            s: item.size,
+            c: item.color,
+            q: item.quantity,
+          }))
         ),
         user_id: userId || "",
         discount_code: validatedDiscountCode,
@@ -228,7 +235,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       JSON.stringify({ clientSecret: session.client_secret }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   } catch (err: unknown) {
@@ -237,7 +244,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       JSON.stringify({ error: "Checkout failed. Please try again." }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }

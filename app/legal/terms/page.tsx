@@ -14,7 +14,7 @@ export default function TermsPage() {
 
         <div className="prose prose-invert max-w-none space-y-6 text-foreground/90">
           <p className="text-sm text-muted-foreground">
-            Last updated: {new Date().toLocaleDateString()}
+            Last updated: February 7, 2026
           </p>
 
           <section>
