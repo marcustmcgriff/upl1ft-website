@@ -26,7 +26,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://upl1ft.org/shop/live-by-faith</loc>
+    <loc>https://upl1ft.org/shop/live-by-faith-not-by-sight</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -34,6 +34,11 @@
     <loc>https://upl1ft.org/shop/his-pain-our-gain</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://upl1ft.org/orders/track</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
   <url>
     <loc>https://upl1ft.org/login</loc>

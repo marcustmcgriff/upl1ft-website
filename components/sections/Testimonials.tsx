@@ -25,7 +25,7 @@ export function Testimonials() {
           <h2 className="text-4xl md:text-5xl font-display uppercase tracking-wider text-accent gold-glow mb-4">
             Testimonies
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-foreground/70 max-w-2xl mx-auto">
             From those who carry the message daily.
           </p>
         </div>

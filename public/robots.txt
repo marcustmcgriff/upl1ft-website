@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /orders/track?token=
 
 Sitemap: https://upl1ft.org/sitemap.xml

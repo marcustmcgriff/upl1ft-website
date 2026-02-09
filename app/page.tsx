@@ -11,8 +11,35 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://upl1ft.org/#organization",
+        name: "UPL1FT",
+        url: "https://upl1ft.org",
+        logo: "https://upl1ft.org/images/logo.png",
+        description:
+          "Premium heavyweight streetwear for those who walk the narrow path. Strength. Discipline. Faith.",
+        sameAs: ["https://instagram.com/upl1ft.co"],
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://upl1ft.org/#website",
+        url: "https://upl1ft.org",
+        name: "UPL1FT",
+        publisher: { "@id": "https://upl1ft.org/#organization" },
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Hero />
       <FeaturedDrops />
       <Testimonials />
