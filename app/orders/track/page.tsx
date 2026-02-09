@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { RefreshCw, ExternalLink, Package, UserPlus } from "lucide-react";
+import { RefreshCw, ExternalLink, Package, UserPlus, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { OrderProgressBar } from "@/components/account/OrderProgressBar";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -36,14 +37,15 @@ function GuestTrackingContent() {
   const token = searchParams.get("token");
   const { user } = useAuth();
   const [order, setOrder] = useState<TrackingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!token);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lookupEmail, setLookupEmail] = useState("");
+  const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "sent">("idle");
 
   useEffect(() => {
     async function loadOrder() {
       if (!token) {
-        setError("No tracking token provided.");
         setLoading(false);
         return;
       }
@@ -63,6 +65,23 @@ function GuestTrackingContent() {
     }
     loadOrder();
   }, [token]);
+
+  const handleEmailLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLookupStatus("loading");
+
+    try {
+      await fetch("/api/resend-tracking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: lookupEmail }),
+      });
+    } catch {
+      // Always show success to prevent email enumeration
+    }
+
+    setLookupStatus("sent");
+  };
 
   const handleRefreshTracking = async () => {
     if (!token) return;
@@ -100,6 +119,98 @@ function GuestTrackingContent() {
     );
   }
 
+  // No token provided — show email lookup form
+  if (!token) {
+    return (
+      <div className="max-w-md mx-auto py-12">
+        <div className="text-center mb-8">
+          <Package className="h-16 w-16 text-accent mx-auto mb-6" />
+          <h1 className="text-2xl font-display uppercase tracking-wider text-accent mb-3">
+            Track Your Order
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Enter the email you used at checkout and we&apos;ll send your tracking links.
+          </p>
+        </div>
+
+        {lookupStatus === "sent" ? (
+          <>
+            <div className="bg-accent/5 border border-accent/20 p-6 text-center mb-6">
+              <Mail className="h-10 w-10 text-accent mx-auto mb-4" />
+              <h2 className="font-display uppercase tracking-wider text-accent text-lg mb-2">
+                Check Your Email
+              </h2>
+              <p className="text-muted-foreground text-sm mb-6">
+                If we found orders matching that email, we&apos;ve sent tracking links to your inbox.
+              </p>
+              <button
+                onClick={() => { setLookupStatus("idle"); setLookupEmail(""); }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Try a different email
+              </button>
+            </div>
+
+            {/* Signup CTA — shown after email lookup */}
+            {!user && (
+              <div className="bg-muted border border-border p-6 text-center">
+                <UserPlus className="h-8 w-8 text-accent mx-auto mb-3" />
+                <h3 className="font-display uppercase tracking-wider text-accent text-sm mb-2">
+                  Skip the Email Next Time
+                </h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Create a free account to track all orders instantly, get exclusive discounts, and early access to new drops.
+                </p>
+                <Link href="/signup">
+                  <Button size="sm">Create Free Account</Button>
+                </Link>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <form onSubmit={handleEmailLookup} className="space-y-4">
+              <Input
+                type="email"
+                placeholder="your@email.com"
+                value={lookupEmail}
+                onChange={(e) => setLookupEmail(e.target.value)}
+                required
+                disabled={lookupStatus === "loading"}
+                className="w-full"
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={lookupStatus === "loading"}
+              >
+                {lookupStatus === "loading" ? "Sending..." : "Send Tracking Links"}
+              </Button>
+            </form>
+
+            {/* Subtle signup hint below form */}
+            {!user && (
+              <p className="text-center text-xs text-muted-foreground mt-4">
+                Have an account?{" "}
+                <Link href="/login" className="text-accent hover:underline">
+                  Sign in
+                </Link>
+                {" "}to track all orders instantly.
+              </p>
+            )}
+          </>
+        )}
+
+        <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row gap-4 justify-center text-center">
+          <Link href="/shop">
+            <Button variant="ghost" size="sm">Continue Shopping</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Token provided but order not found
   if (error || !order) {
     return (
       <div className="text-center py-20 max-w-md mx-auto">
@@ -111,8 +222,8 @@ function GuestTrackingContent() {
           {error || "We couldn't find an order with that tracking link."}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/shop">
-            <Button>Continue Shopping</Button>
+          <Link href="/orders/track">
+            <Button>Try Email Lookup</Button>
           </Link>
           <Link href="/login">
             <Button variant="outline">Sign In to View Orders</Button>
