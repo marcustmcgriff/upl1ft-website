@@ -12,7 +12,7 @@ function getCorsHeaders(request: Request) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
 }
 
@@ -43,7 +43,7 @@ function buildTrackingEmailHtml(orders: { tracking_token: string; status: string
         <td style="padding: 12px; border-bottom: 1px solid #333; color: #ccc;">${date}</td>
         <td style="padding: 12px; border-bottom: 1px solid #333; color: #C9A227;">${escapeHtml(statusLabel)}</td>
         <td style="padding: 12px; border-bottom: 1px solid #333; text-align: right;">
-          <a href="https://upl1ft.org/orders/track?token=${o.tracking_token}" style="display: inline-block; background: #C9A227; color: #000; padding: 8px 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">Track</a>
+          <a href="https://upl1ft.org/orders/track?token=${encodeURIComponent(o.tracking_token)}" style="display: inline-block; background: #C9A227; color: #000; padding: 8px 16px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;">Track</a>
         </td>
       </tr>`;
     })

@@ -110,7 +110,7 @@ function mergeCarts(a: CartItem[], b: CartItem[]): CartItem[] {
     if (existing >= 0) {
       merged[existing] = {
         ...merged[existing],
-        quantity: Math.max(merged[existing].quantity, item.quantity),
+        quantity: merged[existing].quantity + item.quantity,
       };
     } else {
       merged.push(item);

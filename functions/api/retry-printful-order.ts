@@ -59,6 +59,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
+  // Verify the user is an admin
+  const adminEmail = context.env.ADMIN_EMAIL;
+  if (!adminEmail || user.email !== adminEmail) {
+    return new Response(JSON.stringify({ error: "Admin access required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
   try {
     const { orderId } = (await context.request.json()) as { orderId: string };
 

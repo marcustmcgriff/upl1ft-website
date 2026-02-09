@@ -18,10 +18,16 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get("redirect") || "/account";
-  // Prevent open redirect — only allow relative paths starting with /
-  const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
-    ? rawRedirect
-    : "/account";
+  // Prevent open redirect — only allow same-origin relative paths
+  let redirect = "/account";
+  try {
+    const url = new URL(rawRedirect, "https://upl1ft.org");
+    if (url.origin === "https://upl1ft.org" && url.pathname.startsWith("/")) {
+      redirect = url.pathname + url.search;
+    }
+  } catch {
+    // Invalid URL — fall back to /account
+  }
 
   useEffect(() => {
     if (user) {
