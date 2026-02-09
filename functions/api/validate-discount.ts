@@ -5,13 +5,28 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY: string;
 }
 
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get("Origin") || "";
+  const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export const onRequestOptions: PagesFunction<Env> = async (context) => {
+  return new Response(null, { headers: getCorsHeaders(context.request) });
+};
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = context.env;
+  const corsHeaders = getCorsHeaders(context.request);
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return new Response(
       JSON.stringify({ valid: false, error: "Service not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 
@@ -26,7 +41,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (!code) {
       return new Response(
         JSON.stringify({ valid: false, error: "No code provided" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -41,7 +56,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (dbError || !discount) {
       return new Response(
         JSON.stringify({ valid: false, error: "Invalid discount code" }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -49,7 +64,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ valid: false, error: "This code has expired" }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -57,7 +72,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     if (discount.starts_at && new Date(discount.starts_at) > new Date()) {
       return new Response(
         JSON.stringify({ valid: false, error: "This code is not yet active" }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -71,7 +86,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           valid: false,
           error: "This code is no longer available",
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -84,7 +99,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             valid: false,
             error: "This code is for members only. Please sign in.",
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
@@ -99,7 +114,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             valid: false,
             error: "This code is for members only. Please sign in.",
           }),
-          { status: 200, headers: { "Content-Type": "application/json" } }
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
     }
@@ -111,7 +126,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           valid: false,
           error: `Minimum order of $${(discount.min_order_amount / 100).toFixed(2)} required`,
         }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -132,12 +147,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         description: discount.description,
         code: discount.code,
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (err: any) {
     return new Response(
       JSON.stringify({ valid: false, error: "Failed to validate code" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };

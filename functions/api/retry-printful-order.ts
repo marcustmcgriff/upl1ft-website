@@ -9,6 +9,20 @@ interface Env {
 
 const PRINTFUL_STORE_ID = "17677297";
 
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get("Origin") || "";
+  const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export const onRequestOptions: PagesFunction<Env> = async (context) => {
+  return new Response(null, { headers: getCorsHeaders(context.request) });
+};
+
 // Mapping of product ID + size to Printful sync variant ID
 const VARIANT_MAP: Record<string, Record<string, number>> = {
   "1": { "S": 5187387218, "M": 5187387219, "L": 5187387220, "XL": 5187387221, "2XL": 5187387222, "3XL": 5187387223 },
@@ -21,15 +35,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PRINTFUL_API_TOKEN } =
     context.env;
 
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "https://upl1ft.org",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  };
-
-  if (context.request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsHeaders = getCorsHeaders(context.request);
 
   // Simple admin auth via Supabase service role — only callable with the service role key
   const authHeader = context.request.headers.get("Authorization");

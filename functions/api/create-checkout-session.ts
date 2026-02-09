@@ -8,6 +8,21 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY: string;
 }
 
+function getCorsHeaders(origin: string, siteUrl: string) {
+  const allowedOrigin = origin === siteUrl ? origin : siteUrl;
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export const onRequestOptions: PagesFunction<Env> = async (context) => {
+  const origin = context.request.headers.get("Origin") || "";
+  const siteUrl = context.env.SITE_URL || "https://upl1ft.org";
+  return new Response(null, { headers: getCorsHeaders(origin, siteUrl) });
+};
+
 interface CartItem {
   productId: string;
   name: string;
@@ -36,16 +51,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
   const origin = SITE_URL || "https://upl1ft.org";
   const requestOrigin = context.request.headers.get("Origin") || "";
-  const allowedOrigin = requestOrigin === origin ? requestOrigin : origin;
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  };
-
-  if (context.request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsHeaders = getCorsHeaders(requestOrigin, origin);
 
   if (!STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: "Stripe not configured" }), {

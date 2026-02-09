@@ -6,66 +6,97 @@ interface Env {
   PRINTFUL_API_TOKEN: string;
 }
 
-export const onRequestPost: PagesFunction<Env> = async (context) => {
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PRINTFUL_API_TOKEN } =
-    context.env;
+const PRINTFUL_STORE_ID = "17677297";
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-  const origin = context.request.headers.get("Origin") || "";
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get("Origin") || "";
   const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
-  const corsHeaders = {
+  return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
   };
+}
 
-  if (context.request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+export const onRequestOptions: PagesFunction<Env> = async (context) => {
+  return new Response(null, { headers: getCorsHeaders(context.request) });
+};
+
+export const onRequestPost: PagesFunction<Env> = async (context) => {
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PRINTFUL_API_TOKEN } =
+    context.env;
+
+  const corsHeaders = getCorsHeaders(context.request);
 
   try {
-    // Verify auth
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const body = (await context.request.json()) as {
+      orderId?: string;
+      trackingToken?: string;
+    };
+
+    let order: any = null;
+    let orderError: any = null;
+
     const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader) {
+
+    if (body.trackingToken) {
+      // Validate token format before querying
+      if (!UUID_REGEX.test(body.trackingToken)) {
+        return new Response(JSON.stringify({ error: "Invalid token" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      // Guest tracking: lookup by tracking token (no auth required)
+      const result = await supabase
+        .from("orders")
+        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id")
+        .eq("tracking_token", body.trackingToken)
+        .single();
+      order = result.data;
+      orderError = result.error;
+    } else if (authHeader) {
+      // Authenticated tracking: verify user owns the order
+      const token = authHeader.replace("Bearer ", "");
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
+
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Invalid token" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+
+      if (!body.orderId) {
+        return new Response(
+          JSON.stringify({ error: "Order ID required" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          }
+        );
+      }
+
+      const result = await supabase
+        .from("orders")
+        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id")
+        .eq("id", body.orderId)
+        .eq("user_id", user.id)
+        .single();
+      order = result.data;
+      orderError = result.error;
+    } else {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(token);
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    const { orderId } = (await context.request.json()) as {
-      orderId: string;
-    };
-
-    if (!orderId) {
-      return new Response(
-        JSON.stringify({ error: "Order ID required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Fetch order from Supabase (verify ownership)
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .eq("user_id", user.id)
-      .single();
 
     if (orderError || !order) {
       return new Response(JSON.stringify({ error: "Order not found" }), {
@@ -95,7 +126,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       {
         headers: {
           Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
-          "X-PF-Store-Id": "17677297",
+          "X-PF-Store-Id": PRINTFUL_STORE_ID,
         },
       }
     );
@@ -164,7 +195,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           tracking_url: trackingUrl,
           carrier: carrier,
         })
-        .eq("id", orderId);
+        .eq("id", order.id);
     }
 
     return new Response(

@@ -118,9 +118,14 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         sessionAny.collected_information?.email;
       const giftMessage = session.metadata?.gift_message || "";
 
+      // Create Supabase client once for all DB operations
+      const supabase =
+        SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+          ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+          : null;
+
       // Idempotency check BEFORE creating Printful order to prevent duplicates on retry
-      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      if (supabase) {
         const { data: existingOrder } = await supabase
           .from("orders")
           .select("id")
@@ -202,9 +207,31 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
       }
 
+      // Build shared objects once for reuse across DB insert and emails
+      const trackingToken = crypto.randomUUID();
+      const emailItems = orderItems.map((item) => ({
+        name: item.name,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: item.price || 4000,
+      }));
+      const shippingAddress = {
+        line1: shipping.address.line1 || "",
+        line2: shipping.address.line2 || "",
+        city: shipping.address.city || "",
+        state: shipping.address.state || "",
+        postal_code: shipping.address.postal_code || "",
+        country: shipping.address.country || "US",
+      };
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : null;
+
       // Save order to Supabase
-      if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      let orderSaved = false;
+      if (supabase) {
 
         // Find user by metadata user_id or by email match
         let userId: string | null = session.metadata?.user_id || null;
@@ -221,11 +248,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const { error: insertError } = await supabase.from("orders").insert({
           user_id: userId || null,
           stripe_session_id: session.id,
-          stripe_payment_intent_id:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : null,
+          stripe_payment_intent_id: paymentIntentId,
           printful_order_id: printfulOrderId,
+          tracking_token: trackingToken,
           status: "confirmed",
           items: orderItems.map((item) => ({
             productId: item.productId,
@@ -242,14 +267,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           total: session.amount_total || 0,
           discount_code: session.metadata?.discount_code || null,
           shipping_name: shipping.name,
-          shipping_address: {
-            line1: shipping.address.line1 || "",
-            line2: shipping.address.line2 || "",
-            city: shipping.address.city || "",
-            state: shipping.address.state || "",
-            postal_code: shipping.address.postal_code || "",
-            country: shipping.address.country || "US",
-          },
+          shipping_address: shippingAddress,
           customer_email: customerEmail || null,
           gift_message: giftMessage || null,
         });
@@ -258,10 +276,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           console.error("Failed to save order to Supabase:", insertError);
         } else {
           console.log("Order saved to Supabase");
+          orderSaved = true;
         }
 
-        // Record discount redemption if applicable
-        if (session.metadata?.discount_code) {
+        // Record discount redemption if applicable (only if order saved)
+        if (orderSaved && session.metadata?.discount_code) {
           const { data: discountData } = await supabase
             .from("discount_codes")
             .select("id")
@@ -269,7 +288,6 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             .single();
 
           if (discountData) {
-            // Atomic increment to avoid race conditions
             await supabase.rpc("increment_discount_uses", {
               discount_id: discountData.id,
             });
@@ -290,29 +308,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
 
       // Send order confirmation email to customer
+      // Only include tracking token if the order was saved to the database
       if (customerEmail) {
         await sendOrderConfirmationEmail(context.env, {
           to: customerEmail,
-          orderItems: orderItems.map((item) => ({
-            name: item.name,
-            size: item.size,
-            color: item.color,
-            quantity: item.quantity,
-            price: item.price || 4000,
-          })),
+          orderItems: emailItems,
           subtotal: session.amount_subtotal || 0,
           discountAmount: session.total_details?.amount_discount || 0,
           total: session.amount_total || 0,
           shippingName: shipping.name || "Customer",
-          shippingAddress: {
-            line1: shipping.address.line1 || "",
-            line2: shipping.address.line2 || "",
-            city: shipping.address.city || "",
-            state: shipping.address.state || "",
-            postal_code: shipping.address.postal_code || "",
-            country: shipping.address.country || "US",
-          },
+          shippingAddress,
           giftMessage: giftMessage || undefined,
+          trackingToken: orderSaved ? trackingToken : undefined,
         });
       }
 
@@ -322,33 +329,17 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       try {
         const adminResult = await sendAdminOrderNotification(context.env, {
           to: adminEmail,
-          orderItems: orderItems.map((item) => ({
-            name: item.name,
-            size: item.size,
-            color: item.color,
-            quantity: item.quantity,
-            price: item.price || 4000,
-          })),
+          orderItems: emailItems,
           subtotal: session.amount_subtotal || 0,
           discountAmount: session.total_details?.amount_discount || 0,
           total: session.amount_total || 0,
           customerEmail: customerEmail || "Unknown",
           shippingName: shipping.name || "Customer",
-          shippingAddress: {
-            line1: shipping.address.line1 || "",
-            line2: shipping.address.line2 || "",
-            city: shipping.address.city || "",
-            state: shipping.address.state || "",
-            postal_code: shipping.address.postal_code || "",
-            country: shipping.address.country || "US",
-          },
+          shippingAddress,
           printfulOrderId,
           printfulFailed,
           stripeSessionId: session.id,
-          stripePaymentIntentId:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : null,
+          stripePaymentIntentId: paymentIntentId,
           giftMessage: giftMessage || undefined,
           discountCode: session.metadata?.discount_code || undefined,
         });

@@ -25,6 +25,7 @@ interface OrderEmailData {
     country: string;
   };
   giftMessage?: string;
+  trackingToken?: string;
 }
 
 function formatCents(cents: number): string {
@@ -145,7 +146,14 @@ function buildEmailHtml(data: OrderEmailData): string {
       </ol>
     </div>
 
-    <!-- CTA -->
+    <!-- Track Order CTA -->
+    ${data.trackingToken ? `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <a href="https://upl1ft.org/orders/track?token=${data.trackingToken}" style="display: inline-block; background: #C9A227; color: #000; padding: 14px 32px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 13px;">Track Your Order</a>
+    </div>
+    ` : ""}
+
+    <!-- Continue Shopping -->
     <div style="text-align: center; margin-bottom: 40px;">
       <a href="https://upl1ft.org/shop" style="display: inline-block; background: #C9A227; color: #000; padding: 14px 32px; text-decoration: none; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 13px;">Continue Shopping</a>
     </div>

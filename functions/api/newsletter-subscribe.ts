@@ -6,6 +6,20 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY?: string;
 }
 
+function getCorsHeaders(request: Request) {
+  const origin = request.headers.get("Origin") || "";
+  const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export const onRequestOptions: PagesFunction<Env> = async (context) => {
+  return new Response(null, { headers: getCorsHeaders(context.request) });
+};
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const {
     MAILCHIMP_API_KEY,
@@ -15,17 +29,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     SUPABASE_SERVICE_ROLE_KEY,
   } = context.env;
 
-  const origin = context.request.headers.get("Origin") || "";
-  const allowedOrigin = origin === "https://upl1ft.org" ? origin : "https://upl1ft.org";
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  };
-
-  if (context.request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsHeaders = getCorsHeaders(context.request);
 
   try {
     const { email } = (await context.request.json()) as { email: string };

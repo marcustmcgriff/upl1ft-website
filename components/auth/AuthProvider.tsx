@@ -89,12 +89,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (newSession?.user) {
         await fetchProfile(newSession.user.id);
+
+        // Claim any guest orders matching this user's email (only on fresh sign-in)
+        if (event === "SIGNED_IN" && !sessionStorage.getItem("orders_claimed")) {
+          sessionStorage.setItem("orders_claimed", "1");
+          try {
+            await fetch("/api/claim-orders", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${newSession.access_token}`,
+              },
+            });
+          } catch {
+            // Non-critical — don't block auth flow
+          }
+        }
       } else {
         setProfile(null);
       }
 
       if (event === "SIGNED_OUT") {
         setProfile(null);
+        sessionStorage.removeItem("orders_claimed");
       }
     });
 
