@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { X, User, Package, LogOut } from "lucide-react";
+import { X, User, Package, LogOut, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -132,6 +132,14 @@ export function MobileNav({ isOpen, onClose, navLinks }: MobileNavProps) {
                   >
                     <User className="h-5 w-5" />
                     <span className="text-sm uppercase tracking-wider">Sign In</span>
+                  </Link>
+                  <Link
+                    href="/orders/track"
+                    onClick={onClose}
+                    className="flex items-center gap-3 text-foreground hover:text-accent transition-colors"
+                  >
+                    <Search className="h-5 w-5" />
+                    <span className="text-sm uppercase tracking-wider">Track Order</span>
                   </Link>
                   <Link
                     href="/signup"

@@ -95,6 +95,14 @@ export function Footer() {
                   Tees
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/orders/track"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Track Order
+                </Link>
+              </li>
             </ul>
           </div>
 
