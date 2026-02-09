@@ -95,6 +95,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       {
         headers: {
           Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
+          "X-PF-Store-Id": "17677297",
         },
       }
     );

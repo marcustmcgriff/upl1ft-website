@@ -1,5 +1,6 @@
 interface Env {
   RESEND_API_KEY: string;
+  ADMIN_EMAIL?: string;
 }
 
 interface OrderEmailData {
@@ -198,6 +199,178 @@ export async function sendOrderConfirmationEmail(
     return true;
   } catch (err: any) {
     console.error("Failed to send order email:", err.message);
+    return false;
+  }
+}
+
+// --- Admin Order Notification ---
+
+interface AdminOrderEmailData {
+  to: string;
+  orderItems: {
+    name: string;
+    size: string;
+    color: string;
+    quantity: number;
+    price: number;
+  }[];
+  subtotal: number;
+  discountAmount: number;
+  total: number;
+  customerEmail: string;
+  shippingName: string;
+  shippingAddress: {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
+  printfulOrderId: string | null;
+  printfulFailed: boolean;
+  stripeSessionId: string;
+  stripePaymentIntentId: string | null;
+  giftMessage?: string;
+  discountCode?: string;
+}
+
+function buildAdminEmailHtml(data: AdminOrderEmailData): string {
+  const itemsHtml = data.orderItems
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding: 8px; border: 1px solid #333; color: #fff;">${escapeHtml(item.name)}</td>
+        <td style="padding: 8px; border: 1px solid #333; color: #ccc;">${escapeHtml(item.size)}</td>
+        <td style="padding: 8px; border: 1px solid #333; color: #ccc; text-align: center;">${item.quantity}</td>
+        <td style="padding: 8px; border: 1px solid #333; color: #fff; text-align: right;">${formatCents(item.price * item.quantity)}</td>
+      </tr>`
+    )
+    .join("");
+
+  const addressLines = [
+    data.shippingAddress.line1,
+    data.shippingAddress.line2,
+    `${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postal_code}`,
+  ]
+    .filter(Boolean)
+    .map(escapeHtml)
+    .join("<br/>");
+
+  const statusColor = data.printfulFailed ? "#ef4444" : "#4ade80";
+  const statusText = data.printfulFailed
+    ? "FAILED — Manual fulfillment required"
+    : `Created (ID: ${data.printfulOrderId})`;
+  const statusIcon = data.printfulFailed ? "&#9888;" : "&#10003;";
+
+  const discountHtml = data.discountCode
+    ? `<tr><td style="padding: 4px 8px; color: #999;">Discount Code</td><td style="padding: 4px 8px; color: #4ade80;">${escapeHtml(data.discountCode)} (-${formatCents(data.discountAmount)})</td></tr>`
+    : "";
+
+  const giftHtml = data.giftMessage
+    ? `<tr><td style="padding: 4px 8px; color: #999;">Gift Message</td><td style="padding: 4px 8px; color: #ccc; font-style: italic;">"${escapeHtml(data.giftMessage)}"</td></tr>`
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"/></head>
+<body style="margin: 0; padding: 0; background: #0a0a0a; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h1 style="font-size: 24px; letter-spacing: 4px; color: #C9A227; margin: 0;">UPL1FT</h1>
+      <p style="color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;">Admin Order Notification</p>
+    </div>
+
+    <!-- Printful Status Banner -->
+    <div style="background: ${data.printfulFailed ? "#1a0000" : "#001a00"}; border: 1px solid ${statusColor}; padding: 16px; margin-bottom: 24px; text-align: center;">
+      <span style="font-size: 24px;">${statusIcon}</span>
+      <p style="color: ${statusColor}; font-weight: bold; margin: 8px 0 4px 0; font-size: 16px;">
+        Printful: ${escapeHtml(statusText)}
+      </p>
+      ${data.printfulFailed ? '<p style="color: #f87171; margin: 0; font-size: 13px;">Log into Printful to manually create this order.</p>' : ""}
+    </div>
+
+    <!-- Order Items -->
+    <div style="background: #111; padding: 16px; margin-bottom: 16px;">
+      <h3 style="color: #C9A227; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 12px 0;">Items</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr style="background: #1a1a1a;">
+          <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: left; font-size: 12px;">Product</th>
+          <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: left; font-size: 12px;">Size</th>
+          <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: center; font-size: 12px;">Qty</th>
+          <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: right; font-size: 12px;">Price</th>
+        </tr>
+        ${itemsHtml}
+      </table>
+      <p style="color: #C9A227; font-weight: bold; text-align: right; margin: 12px 0 0 0; font-size: 18px;">Total: ${formatCents(data.total)}</p>
+    </div>
+
+    <!-- Customer & Shipping -->
+    <div style="background: #111; padding: 16px; margin-bottom: 16px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><td style="padding: 4px 8px; color: #999;">Customer</td><td style="padding: 4px 8px; color: #fff;">${escapeHtml(data.customerEmail)}</td></tr>
+        <tr><td style="padding: 4px 8px; color: #999;">Ship To</td><td style="padding: 4px 8px; color: #ccc;">${escapeHtml(data.shippingName)}<br/>${addressLines}</td></tr>
+        ${discountHtml}
+        ${giftHtml}
+      </table>
+    </div>
+
+    <!-- Stripe IDs -->
+    <div style="background: #111; padding: 16px; margin-bottom: 16px;">
+      <h3 style="color: #C9A227; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin: 0 0 8px 0;">Stripe Reference</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><td style="padding: 4px 8px; color: #999; font-size: 12px;">Session</td><td style="padding: 4px 8px; color: #ccc; font-size: 12px; word-break: break-all;">${escapeHtml(data.stripeSessionId)}</td></tr>
+        ${data.stripePaymentIntentId ? `<tr><td style="padding: 4px 8px; color: #999; font-size: 12px;">Payment</td><td style="padding: 4px 8px; color: #ccc; font-size: 12px;">${escapeHtml(data.stripePaymentIntentId)}</td></tr>` : ""}
+      </table>
+    </div>
+
+    <div style="text-align: center; border-top: 1px solid #222; padding-top: 16px;">
+      <p style="color: #444; font-size: 11px; margin: 0;">UPL1FT Admin Notification</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+export async function sendAdminOrderNotification(
+  env: Env,
+  data: AdminOrderEmailData
+): Promise<boolean> {
+  if (!env.RESEND_API_KEY) {
+    console.log("RESEND_API_KEY not configured, skipping admin email");
+    return false;
+  }
+
+  const subject = data.printfulFailed
+    ? "URGENT: Printful Order Failed — UPL1FT"
+    : "New Order — UPL1FT";
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "UPL1FT <orders@upl1ft.org>",
+        to: [data.to],
+        subject,
+        html: buildAdminEmailHtml(data),
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Admin notification email failed:", error);
+      return false;
+    }
+
+    console.log("Admin notification email sent to", data.to);
+    return true;
+  } catch (err: any) {
+    console.error("Failed to send admin email:", err.message);
     return false;
   }
 }

@@ -1,6 +1,9 @@
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { sendOrderConfirmationEmail } from "./send-order-email";
+import {
+  sendOrderConfirmationEmail,
+  sendAdminOrderNotification,
+} from "./send-order-email";
 
 interface Env {
   STRIPE_SECRET_KEY: string;
@@ -9,7 +12,10 @@ interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   RESEND_API_KEY: string;
+  ADMIN_EMAIL: string;
 }
+
+const PRINTFUL_STORE_ID = "17677297";
 
 interface OrderItem {
   productId: string;
@@ -93,8 +99,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
 
       if (orderItems.length === 0) {
-        console.error("No order items in session metadata");
-        return new Response("OK", { status: 200 });
+        console.error("No order items in session metadata for session:", session.id);
+        return new Response("Missing order items", { status: 500 });
       }
 
       // Get shipping details (2026-01-28.clover moved to collected_information)
@@ -103,8 +109,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         sessionAny.collected_information?.shipping_details ||
         session.shipping_details;
       if (!shipping?.address) {
-        console.error("No shipping address in session");
-        return new Response("OK", { status: 200 });
+        console.error("No shipping address in session:", session.id);
+        return new Response("Missing shipping address", { status: 500 });
       }
 
       const customerEmail =
@@ -146,6 +152,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Create Printful order
       let printfulOrderId: string | null = null;
+      let printfulFailed = false;
 
       if (printfulItems.length > 0) {
         const printfulOrder: Record<string, unknown> = {
@@ -178,6 +185,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             headers: {
               Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
               "Content-Type": "application/json",
+              "X-PF-Store-Id": PRINTFUL_STORE_ID,
             },
             body: JSON.stringify(printfulOrder),
           }
@@ -187,6 +195,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
         if (!printfulResponse.ok) {
           console.error("Printful order creation failed:", printfulResult);
+          printfulFailed = true;
         } else {
           console.log("Printful order created:", printfulResult);
           printfulOrderId = printfulResult?.result?.id?.toString() || null;
@@ -280,7 +289,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         }
       }
 
-      // Send order confirmation email
+      // Send order confirmation email to customer
       if (customerEmail) {
         await sendOrderConfirmationEmail(context.env, {
           to: customerEmail,
@@ -304,6 +313,43 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
             country: shipping.address.country || "US",
           },
           giftMessage: giftMessage || undefined,
+        });
+      }
+
+      // Send admin notification email
+      const adminEmail = context.env.ADMIN_EMAIL;
+      if (adminEmail) {
+        await sendAdminOrderNotification(context.env, {
+          to: adminEmail,
+          orderItems: orderItems.map((item) => ({
+            name: item.name,
+            size: item.size,
+            color: item.color,
+            quantity: item.quantity,
+            price: item.price || 4000,
+          })),
+          subtotal: session.amount_subtotal || 0,
+          discountAmount: session.total_details?.amount_discount || 0,
+          total: session.amount_total || 0,
+          customerEmail: customerEmail || "Unknown",
+          shippingName: shipping.name || "Customer",
+          shippingAddress: {
+            line1: shipping.address.line1 || "",
+            line2: shipping.address.line2 || "",
+            city: shipping.address.city || "",
+            state: shipping.address.state || "",
+            postal_code: shipping.address.postal_code || "",
+            country: shipping.address.country || "US",
+          },
+          printfulOrderId,
+          printfulFailed,
+          stripeSessionId: session.id,
+          stripePaymentIntentId:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : null,
+          giftMessage: giftMessage || undefined,
+          discountCode: session.metadata?.discount_code || undefined,
         });
       }
     } catch (err: unknown) {
