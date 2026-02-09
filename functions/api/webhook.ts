@@ -317,9 +317,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
 
       // Send admin notification email
-      const adminEmail = context.env.ADMIN_EMAIL;
-      if (adminEmail) {
-        await sendAdminOrderNotification(context.env, {
+      const adminEmail = context.env.ADMIN_EMAIL || "upl1ftgen@gmail.com";
+      console.log("Admin email target:", adminEmail, "| env.ADMIN_EMAIL:", context.env.ADMIN_EMAIL || "(not set)");
+      try {
+        const adminResult = await sendAdminOrderNotification(context.env, {
           to: adminEmail,
           orderItems: orderItems.map((item) => ({
             name: item.name,
@@ -351,6 +352,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           giftMessage: giftMessage || undefined,
           discountCode: session.metadata?.discount_code || undefined,
         });
+        console.log("Admin email result:", adminResult);
+      } catch (adminErr) {
+        console.error("Admin email threw:", adminErr);
       }
     } catch (err: unknown) {
       console.error("Error processing webhook:", err);

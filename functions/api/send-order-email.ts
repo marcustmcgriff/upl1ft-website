@@ -337,8 +337,10 @@ export async function sendAdminOrderNotification(
   env: Env,
   data: AdminOrderEmailData
 ): Promise<boolean> {
+  console.log("sendAdminOrderNotification called for:", data.to, "| RESEND_API_KEY present:", !!env.RESEND_API_KEY);
+
   if (!env.RESEND_API_KEY) {
-    console.log("RESEND_API_KEY not configured, skipping admin email");
+    console.error("RESEND_API_KEY not configured, skipping admin email");
     return false;
   }
 
@@ -347,6 +349,9 @@ export async function sendAdminOrderNotification(
     : "New Order — UPL1FT";
 
   try {
+    const emailHtml = buildAdminEmailHtml(data);
+    console.log("Admin email HTML built, length:", emailHtml.length);
+
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -357,20 +362,22 @@ export async function sendAdminOrderNotification(
         from: "UPL1FT <orders@upl1ft.org>",
         to: [data.to],
         subject,
-        html: buildAdminEmailHtml(data),
+        html: emailHtml,
       }),
     });
 
+    const responseText = await response.text();
+    console.log("Resend admin email response:", response.status, responseText);
+
     if (!response.ok) {
-      const error = await response.text();
-      console.error("Admin notification email failed:", error);
+      console.error("Admin notification email failed:", response.status, responseText);
       return false;
     }
 
-    console.log("Admin notification email sent to", data.to);
+    console.log("Admin notification email sent successfully to", data.to);
     return true;
   } catch (err: any) {
-    console.error("Failed to send admin email:", err.message);
+    console.error("Failed to send admin email:", err.message, err.stack);
     return false;
   }
 }
