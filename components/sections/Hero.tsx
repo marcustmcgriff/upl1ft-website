@@ -24,7 +24,7 @@ export function Hero() {
       <div className="relative z-10 container mx-auto px-4 text-center">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Main Headline */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-display uppercase tracking-wider text-accent gold-glow leading-tight whitespace-nowrap">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-display uppercase tracking-wider text-accent gold-glow animate-glow leading-tight whitespace-nowrap">
             Carry Your Cross
           </h1>
 
@@ -91,7 +91,7 @@ export function Hero() {
           />
 
           {/* Subheading */}
-          <p className="text-lg md:text-xl text-foreground/90 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-foreground/90 max-w-2xl mx-auto leading-relaxed font-light italic">
             Streetwear forged in faith. Premium quality for those who walk the
             narrow path with strength and discipline.
           </p>

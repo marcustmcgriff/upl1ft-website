@@ -69,7 +69,8 @@ export function Footer() {
               />
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Strength. Discipline. Faith. Streetwear for the battle-hardened believer.
+              Strength. Discipline. Faith.<br />
+              Streetwear for the battle-hardened believer.
             </p>
           </div>
 

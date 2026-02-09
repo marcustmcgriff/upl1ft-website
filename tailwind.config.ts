@@ -23,7 +23,7 @@ const config: Config = {
         border: "#2A2A2A",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-cormorant)", "Georgia", "serif"],
         display: ["var(--font-cinzel)", "serif"],
       },
       backgroundImage: {
@@ -35,8 +35,8 @@ const config: Config = {
       },
       keyframes: {
         glow: {
-          '0%': { textShadow: '0 0 10px rgba(200, 162, 74, 0.5)' },
-          '100%': { textShadow: '0 0 20px rgba(200, 162, 74, 0.8)' },
+          '0%': { textShadow: '0 0 10px rgba(200, 162, 74, 0.5)', filter: 'drop-shadow(0 0 8px rgba(200, 162, 74, 0.3))' },
+          '100%': { textShadow: '0 0 25px rgba(200, 162, 74, 0.8), 0 0 50px rgba(200, 162, 74, 0.4)', filter: 'drop-shadow(0 0 20px rgba(200, 162, 74, 0.5))' },
         },
       },
     },

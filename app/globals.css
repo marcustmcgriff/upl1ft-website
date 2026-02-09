@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-cormorant: 'Cormorant Garamond', Georgia, serif;
     --font-cinzel: 'Cinzel', serif;
   }
 
@@ -63,6 +63,7 @@
 @layer utilities {
   .gold-glow {
     text-shadow: 0 0 20px rgba(200, 162, 74, 0.6);
+    filter: drop-shadow(0 0 12px rgba(200, 162, 74, 0.4));
   }
 
   .gold-glow-hover {
@@ -71,12 +72,14 @@
 
   .gold-glow-hover:hover {
     text-shadow: 0 0 30px rgba(200, 162, 74, 0.9);
+    filter: drop-shadow(0 0 20px rgba(200, 162, 74, 0.6));
   }
 
   .gold-glow-strong {
     text-shadow:
       0 0 30px rgba(200, 162, 74, 0.8),
       0 0 60px rgba(200, 162, 74, 0.4);
+    filter: drop-shadow(0 0 25px rgba(200, 162, 74, 0.5)) drop-shadow(0 0 50px rgba(200, 162, 74, 0.25));
   }
 
   .baroque-border {
