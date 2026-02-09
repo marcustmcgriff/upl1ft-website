@@ -143,14 +143,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         email: order.customer_email || "",
       },
       items: printfulItems,
+      packing_slip: {
+        email: "support@upl1ft.org",
+        message: order.gift_message || "Thank you for your order. Rise Above. Walk In Purpose. — UPL1FT",
+      },
       ...(order.gift_message
-        ? {
-            gift: { subject: "UPL1FT", message: order.gift_message },
-            packing_slip: {
-              email: "support@upl1ft.org",
-              message: order.gift_message,
-            },
-          }
+        ? { gift: { subject: "UPL1FT", message: order.gift_message } }
         : {}),
     };
 
