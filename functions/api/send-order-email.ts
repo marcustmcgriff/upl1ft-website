@@ -203,7 +203,7 @@ export async function sendOrderConfirmationEmail(
       return false;
     }
 
-    console.log("Order confirmation email sent to", data.to);
+    console.log("Order confirmation email sent successfully");
     return true;
   } catch (err: any) {
     console.error("Failed to send order email:", err.message);
@@ -345,7 +345,7 @@ export async function sendAdminOrderNotification(
   env: Env,
   data: AdminOrderEmailData
 ): Promise<boolean> {
-  console.log("sendAdminOrderNotification called for:", data.to, "| RESEND_API_KEY present:", !!env.RESEND_API_KEY);
+  console.log("sendAdminOrderNotification called, RESEND_API_KEY present:", !!env.RESEND_API_KEY);
 
   if (!env.RESEND_API_KEY) {
     console.error("RESEND_API_KEY not configured, skipping admin email");
@@ -375,14 +375,14 @@ export async function sendAdminOrderNotification(
     });
 
     const responseText = await response.text();
-    console.log("Resend admin email response:", response.status, responseText);
+    console.log("Resend admin email response:", response.status);
 
     if (!response.ok) {
-      console.error("Admin notification email failed:", response.status, responseText);
+      console.error("Admin notification email failed:", response.status);
       return false;
     }
 
-    console.log("Admin notification email sent successfully to", data.to);
+    console.log("Admin notification email sent successfully");
     return true;
   } catch (err: any) {
     console.error("Failed to send admin email:", err.message, err.stack);

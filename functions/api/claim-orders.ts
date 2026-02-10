@@ -95,7 +95,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       );
     }
 
-    console.log(`Claimed ${orderIds.length} orders for user ${user.id} (${user.email})`);
+    console.log(`Claimed ${orderIds.length} orders for user ${user.id}`);
 
     return new Response(
       JSON.stringify({ claimed: orderIds.length }),

@@ -197,11 +197,11 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         const printfulResult = await printfulResponse.json();
 
         if (!printfulResponse.ok) {
-          console.error("Printful order creation failed:", printfulResult);
+          console.error("Printful order creation failed, status:", printfulResponse.status);
           printfulFailed = true;
         } else {
-          console.log("Printful order created:", printfulResult);
           printfulOrderId = printfulResult?.result?.id?.toString() || null;
+          console.log("Printful order created, ID:", printfulOrderId);
         }
       }
 
@@ -323,7 +323,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       // Send admin notification email
       const adminEmail = context.env.ADMIN_EMAIL || "upl1ftgen@gmail.com";
-      console.log("Admin email target:", adminEmail, "| env.ADMIN_EMAIL:", context.env.ADMIN_EMAIL || "(not set)");
+      console.log("Sending admin notification, configured:", !!context.env.ADMIN_EMAIL);
       try {
         const adminResult = await sendAdminOrderNotification(context.env, {
           to: adminEmail,
@@ -341,7 +341,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           giftMessage: giftMessage || undefined,
           discountCode: session.metadata?.discount_code || undefined,
         });
-        console.log("Admin email result:", adminResult);
+        console.log("Admin notification sent:", adminResult);
       } catch (adminErr) {
         console.error("Admin email threw:", adminErr);
       }

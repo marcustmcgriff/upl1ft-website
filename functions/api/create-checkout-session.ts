@@ -148,7 +148,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       const product = PRODUCT_CATALOG[item.productId];
       if (!product) {
         return new Response(
-          JSON.stringify({ error: `Unknown product: ${item.productId}` }),
+          JSON.stringify({ error: "Invalid product in cart" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
@@ -160,13 +160,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
       if (!VALID_SIZES.includes(item.size)) {
         return new Response(
-          JSON.stringify({ error: `Invalid size: ${item.size}` }),
+          JSON.stringify({ error: "Invalid size selection" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
       if (!VALID_COLORS.includes(item.color)) {
         return new Response(
-          JSON.stringify({ error: `Invalid color: ${item.color}` }),
+          JSON.stringify({ error: "Invalid color selection" }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
