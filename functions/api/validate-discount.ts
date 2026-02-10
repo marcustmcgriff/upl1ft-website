@@ -53,73 +53,37 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .eq("active", true)
       .single();
 
+    const invalidCode = () =>
+      new Response(
+        JSON.stringify({ valid: false, error: "Invalid or expired code" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+
     if (dbError || !discount) {
-      return new Response(
-        JSON.stringify({ valid: false, error: "Invalid discount code" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return invalidCode();
     }
 
-    // Check expiration
-    if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
-      return new Response(
-        JSON.stringify({ valid: false, error: "This code has expired" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+    // Validate eligibility (single generic error for all failure reasons)
+    const now = new Date();
+    const notExpired = !discount.expires_at || new Date(discount.expires_at) > now;
+    const started = !discount.starts_at || new Date(discount.starts_at) <= now;
+    const hasUses = discount.max_uses === null || discount.current_uses < discount.max_uses;
 
-    // Check start date
-    if (discount.starts_at && new Date(discount.starts_at) > new Date()) {
-      return new Response(
-        JSON.stringify({ valid: false, error: "This code is not yet active" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Check usage limit
-    if (
-      discount.max_uses !== null &&
-      discount.current_uses >= discount.max_uses
-    ) {
-      return new Response(
-        JSON.stringify({
-          valid: false,
-          error: "This code is no longer available",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Check members-only
+    let memberOk = !discount.members_only;
     if (discount.members_only) {
       const authHeader = context.request.headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(
-          JSON.stringify({
-            valid: false,
-            error: "This code is for members only. Please sign in.",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      const token = authHeader.split(" ")[1];
-      const {
-        data: { user },
-      } = await supabase.auth.getUser(token);
-
-      if (!user) {
-        return new Response(
-          JSON.stringify({
-            valid: false,
-            error: "This code is for members only. Please sign in.",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.split(" ")[1];
+        const { data: { user } } = await supabase.auth.getUser(token);
+        memberOk = !!user;
       }
     }
 
-    // Check minimum order amount
+    if (!notExpired || !started || !hasUses || !memberOk) {
+      return invalidCode();
+    }
+
+    // Minimum order amount — specific error kept as a UX hint (not a security disclosure)
     if (discount.min_order_amount > 0 && subtotal < discount.min_order_amount) {
       return new Response(
         JSON.stringify({

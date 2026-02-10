@@ -2,29 +2,41 @@
 
 import { useState, useEffect } from "react";
 import { Gift, Sparkles, Clock } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { DiscountCodeCard } from "@/components/account/DiscountCodeCard";
 import type { DiscountCode } from "@/lib/supabase/types";
 import { products } from "@/lib/data/products";
 
 export default function PerksPage() {
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadPerks() {
-      const { data } = await supabase
-        .from("discount_codes")
-        .select("*")
-        .eq("members_only", true);
-
-      if (data) setDiscounts(data as DiscountCode[]);
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch("/api/member-perks", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (res.ok) {
+          const { discounts: data } = await res.json();
+          if (data) setDiscounts(data as DiscountCode[]);
+        }
+      } catch {
+        // Server unavailable — show empty perks
+      }
       setLoading(false);
     }
     loadPerks();
-  }, []);
+  }, [session?.access_token]);
 
   // Find early access products (future public date)
   const now = new Date();
@@ -73,7 +85,7 @@ export default function PerksPage() {
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
             {discounts.map((discount) => (
-              <DiscountCodeCard key={discount.id} discount={discount} />
+              <DiscountCodeCard key={discount.code} discount={discount} />
             ))}
           </div>
         )}
