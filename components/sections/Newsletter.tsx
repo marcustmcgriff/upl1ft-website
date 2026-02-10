@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Newsletter() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const { session } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +27,7 @@ export function Newsletter() {
             ? { Authorization: `Bearer ${session.access_token}` }
             : {}),
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
 
       const data = await response.json();
@@ -75,28 +77,34 @@ export function Newsletter() {
           </p>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={status === "loading"}
-              className="flex-1"
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={status === "loading"}
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                size="lg"
+                disabled={status === "loading" || !turnstileToken}
+                className="sm:w-auto"
+              >
+                {status === "loading"
+                  ? "Joining..."
+                  : status === "success"
+                  ? "Joined!"
+                  : "Subscribe"}
+              </Button>
+            </div>
+            <TurnstileWidget
+              onToken={setTurnstileToken}
+              onExpire={() => setTurnstileToken(null)}
             />
-            <Button
-              type="submit"
-              size="lg"
-              disabled={status === "loading"}
-              className="sm:w-auto"
-            >
-              {status === "loading"
-                ? "Joining..."
-                : status === "success"
-                ? "Joined!"
-                : "Subscribe"}
-            </Button>
           </form>
 
           {status === "success" && (

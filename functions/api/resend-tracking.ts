@@ -1,9 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { verifyTurnstileToken } from "../lib/verify-turnstile";
 
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   RESEND_API_KEY: string;
+  TURNSTILE_SECRET_KEY: string;
 }
 
 function getCorsHeaders(request: Request) {
@@ -99,7 +101,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const corsHeaders = getCorsHeaders(context.request);
 
   try {
-    const { email } = (await context.request.json()) as { email: string };
+    const { email, turnstileToken } = (await context.request.json()) as {
+      email: string;
+      turnstileToken?: string;
+    };
+
+    // Verify Turnstile token — reject bots
+    if (context.env.TURNSTILE_SECRET_KEY) {
+      const ip = context.request.headers.get("CF-Connecting-IP");
+      const valid = turnstileToken
+        ? await verifyTurnstileToken(turnstileToken, context.env.TURNSTILE_SECRET_KEY, ip)
+        : false;
+      if (!valid) {
+        // Return success to prevent enumeration even on captcha failure
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email) || email.length > 254) {

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Instagram } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -12,6 +13,7 @@ export function Footer() {
   const [email, setEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [newsletterMessage, setNewsletterMessage] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const { session } = useAuth();
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
@@ -28,7 +30,7 @@ export function Footer() {
             ? { Authorization: `Bearer ${session.access_token}` }
             : {}),
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, turnstileToken }),
       });
 
       const data = await response.json();
@@ -166,11 +168,15 @@ export function Footer() {
                 disabled={newsletterStatus === "loading"}
                 className="w-full"
               />
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+              />
               <Button
                 type="submit"
                 className="w-full"
                 size="sm"
-                disabled={newsletterStatus === "loading"}
+                disabled={newsletterStatus === "loading" || !turnstileToken}
               >
                 {newsletterStatus === "loading"
                   ? "Subscribing..."

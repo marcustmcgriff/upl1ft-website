@@ -6,6 +6,7 @@ import Link from "next/link";
 import { RefreshCw, ExternalLink, Package, UserPlus, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TurnstileWidget } from "@/components/ui/TurnstileWidget";
 import { OrderProgressBar } from "@/components/account/OrderProgressBar";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -42,6 +43,7 @@ function GuestTrackingContent() {
   const [error, setError] = useState<string | null>(null);
   const [lookupEmail, setLookupEmail] = useState("");
   const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "sent">("idle");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadOrder() {
@@ -74,7 +76,7 @@ function GuestTrackingContent() {
       await fetch("/api/resend-tracking", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: lookupEmail }),
+        body: JSON.stringify({ email: lookupEmail, turnstileToken }),
       });
     } catch {
       // Always show success to prevent email enumeration
@@ -179,10 +181,14 @@ function GuestTrackingContent() {
                 disabled={lookupStatus === "loading"}
                 className="w-full"
               />
+              <TurnstileWidget
+                onToken={setTurnstileToken}
+                onExpire={() => setTurnstileToken(null)}
+              />
               <Button
                 type="submit"
                 className="w-full"
-                disabled={lookupStatus === "loading"}
+                disabled={lookupStatus === "loading" || !turnstileToken}
               >
                 {lookupStatus === "loading" ? "Sending..." : "Send Tracking Links"}
               </Button>
