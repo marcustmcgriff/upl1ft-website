@@ -185,10 +185,10 @@ function GuestTrackingContent() {
       <div className="max-w-md mx-auto py-12">
         <div className="text-center mb-8">
           <Package className="h-16 w-16 text-accent mx-auto mb-6" />
-          <h1 className="text-2xl font-display uppercase tracking-wider text-accent mb-3">
+          <h1 className="text-3xl font-display uppercase tracking-wider text-accent mb-3">
             Track Your Order
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-base">
             Enter the email you used at checkout and we&apos;ll send your
             tracking links.
           </p>
@@ -198,10 +198,10 @@ function GuestTrackingContent() {
           <>
             <div className="bg-accent/5 border border-accent/20 p-6 text-center mb-6 fade-in-up">
               <Mail className="h-10 w-10 text-accent mx-auto mb-4" />
-              <h2 className="font-display uppercase tracking-wider text-accent text-lg mb-2">
+              <h2 className="font-display uppercase tracking-wider text-accent text-xl mb-2">
                 Check Your Email
               </h2>
-              <p className="text-muted-foreground text-sm mb-6">
+              <p className="text-muted-foreground text-base mb-6">
                 If we found orders matching that email, we&apos;ve sent tracking
                 links to your inbox.
               </p>
@@ -210,7 +210,7 @@ function GuestTrackingContent() {
                   setLookupStatus("idle");
                   setLookupEmail("");
                 }}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-base text-muted-foreground hover:text-foreground transition-colors"
               >
                 Try a different email
               </button>
@@ -219,10 +219,10 @@ function GuestTrackingContent() {
             {!user && (
               <div className="bg-muted border border-border p-6 text-center fade-in-up">
                 <UserPlus className="h-8 w-8 text-accent mx-auto mb-3" />
-                <h3 className="font-display uppercase tracking-wider text-accent text-sm mb-2">
+                <h3 className="font-display uppercase tracking-wider text-accent text-base mb-2">
                   Skip the Email Next Time
                 </h3>
-                <p className="text-muted-foreground text-sm mb-4">
+                <p className="text-muted-foreground text-base mb-4">
                   Create a free account to track all orders instantly, get
                   exclusive discounts, and early access to new drops.
                 </p>
@@ -260,7 +260,7 @@ function GuestTrackingContent() {
             </form>
 
             {!user && (
-              <p className="text-center text-xs text-muted-foreground mt-4">
+              <p className="text-center text-sm text-muted-foreground mt-4">
                 Have an account?{" "}
                 <Link
                   href="/login"
@@ -290,10 +290,10 @@ function GuestTrackingContent() {
     return (
       <div className="text-center py-20 max-w-md mx-auto">
         <Package className="h-16 w-16 text-muted-foreground mx-auto mb-6" />
-        <h1 className="text-2xl font-display uppercase tracking-wider text-accent mb-4">
+        <h1 className="text-3xl font-display uppercase tracking-wider text-accent mb-4">
           Order Not Found
         </h1>
-        <p className="text-muted-foreground mb-8">
+        <p className="text-muted-foreground text-base mb-8">
           {error || "We couldn't find an order with that tracking link."}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
