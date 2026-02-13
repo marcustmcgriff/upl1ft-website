@@ -10,6 +10,8 @@ interface Env {
   SITE_URL: string;
 }
 
+const PRINTFUL_STORE_ID = "17677297";
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   const { env } = context;
   const webhookUrl = `${env.SITE_URL || "https://upl1ft.org"}/api/printful-webhook`;
@@ -17,7 +19,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     // First, check existing webhooks
     const existing = await fetch("https://api.printful.com/webhooks", {
-      headers: { Authorization: `Bearer ${env.PRINTFUL_API_TOKEN}` },
+      headers: {
+        Authorization: `Bearer ${env.PRINTFUL_API_TOKEN}`,
+        "X-PF-Store-Id": PRINTFUL_STORE_ID,
+      },
     });
     const existingData = (await existing.json()) as any;
 
@@ -26,6 +31,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.PRINTFUL_API_TOKEN}`,
+        "X-PF-Store-Id": PRINTFUL_STORE_ID,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
