@@ -122,7 +122,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     // Fetch tracking from Printful
     const printfulResponse = await fetch(
-      `https://api.printful.com/orders/@${order.printful_order_id}`,
+      `https://api.printful.com/orders/${order.printful_order_id}`,
       {
         headers: {
           Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
