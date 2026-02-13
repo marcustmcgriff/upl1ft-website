@@ -23,10 +23,10 @@ export function ProductRecommendations({ purchasedProductIds }: ProductRecommend
   return (
     <div>
       <div className="text-center mb-6">
-        <h2 className="font-display uppercase tracking-[0.15em] text-accent text-sm mb-1">
+        <h2 className="font-display uppercase tracking-[0.15em] text-accent text-xl mb-2">
           Continue Your Journey
         </h2>
-        <p className="text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-sm">
           More designs to fuel your faith
         </p>
       </div>
