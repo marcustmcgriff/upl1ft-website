@@ -134,9 +134,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setHydrated(true);
   }, []);
 
-  // Load cart from Supabase when user logs in and merge with local cart
+  // Load cart from Supabase when user logs in — prefer local cart over remote
+  const remoteLoadedRef = useRef(false);
   useEffect(() => {
-    if (!hydrated || !user || !supabaseConfigured) return;
+    // Reset flag when user logs out so next login can load remote cart
+    if (!user) {
+      remoteLoadedRef.current = false;
+      return;
+    }
+    if (!hydrated || !supabaseConfigured) return;
+    if (remoteLoadedRef.current) return;
+    remoteLoadedRef.current = true;
 
     const loadRemoteCart = async () => {
       try {
@@ -149,9 +157,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (data?.cart_data && Array.isArray(data.cart_data)) {
           const remoteItems = fromEntries(data.cart_data as CartEntry[]);
           setItems((localItems) => {
-            if (localItems.length === 0) return remoteItems;
-            if (remoteItems.length === 0) return localItems;
-            return mergeCarts(localItems, remoteItems);
+            // Local cart has items — keep it as-is (user's current intent)
+            if (localItems.length > 0) return localItems;
+            // Local cart empty — restore from remote
+            return remoteItems;
           });
         }
       } catch {
@@ -252,7 +261,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => {
     setItems([]);
-  }, []);
+    // Immediately clear remote cart so stale items don't return on next login
+    if (user && supabaseConfigured) {
+      supabase
+        .from("profiles")
+        .update({ cart_data: [] })
+        .eq("id", user.id)
+        .then(() => {});
+    }
+  }, [user]);
 
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const cartTotal = items.reduce(
