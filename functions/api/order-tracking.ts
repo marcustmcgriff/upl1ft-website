@@ -54,7 +54,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Guest tracking: lookup by tracking token (no auth required)
       const result = await supabase
         .from("orders")
-        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id")
+        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id, items, created_at, shipping_name, total, subtotal, shipping, discount_amount, discount_code")
         .eq("tracking_token", body.trackingToken)
         .single();
       order = result.data;
@@ -85,7 +85,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       const result = await supabase
         .from("orders")
-        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id")
+        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id, items, created_at, shipping_name, total, subtotal, shipping, discount_amount, discount_code")
         .eq("id", body.orderId)
         .eq("user_id", user.id)
         .single();
@@ -105,6 +105,18 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       });
     }
 
+    // Build shared order detail fields
+    const orderDetails = {
+      items: order.items || [],
+      created_at: order.created_at,
+      shipping_name: order.shipping_name,
+      total: order.total,
+      subtotal: order.subtotal,
+      shipping: order.shipping,
+      discount_amount: order.discount_amount,
+      discount_code: order.discount_code,
+    };
+
     // If no Printful order ID, return current order data
     if (!order.printful_order_id) {
       return new Response(
@@ -113,6 +125,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           tracking_number: order.tracking_number,
           tracking_url: order.tracking_url,
           carrier: order.carrier,
+          ship_date: null,
+          estimated_delivery: null,
+          ...orderDetails,
         }),
         {
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -139,6 +154,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           tracking_number: order.tracking_number,
           tracking_url: order.tracking_url,
           carrier: order.carrier,
+          ship_date: null,
+          estimated_delivery: null,
+          ...orderDetails,
         }),
         {
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -168,12 +186,29 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     let trackingNumber = order.tracking_number;
     let trackingUrl = order.tracking_url;
     let carrier = order.carrier;
+    let shipDate: string | null = null;
+    let estimatedDelivery: string | null = null;
 
     if (printfulOrder?.shipments && printfulOrder.shipments.length > 0) {
       const shipment = printfulOrder.shipments[0];
       trackingNumber = shipment.tracking_number || trackingNumber;
       trackingUrl = shipment.tracking_url || trackingUrl;
       carrier = shipment.carrier || carrier;
+      shipDate = shipment.ship_date || null;
+      estimatedDelivery = shipment.estimated_delivery || null;
+
+      // Compute estimated delivery as ship_date + 7 business days if not provided
+      if (shipDate && !estimatedDelivery) {
+        const ship = new Date(shipDate);
+        let businessDays = 0;
+        const est = new Date(ship);
+        while (businessDays < 7) {
+          est.setDate(est.getDate() + 1);
+          const day = est.getDay();
+          if (day !== 0 && day !== 6) businessDays++;
+        }
+        estimatedDelivery = est.toISOString().split("T")[0];
+      }
 
       if (shipment.ship_date) {
         newStatus = "shipped";
@@ -204,6 +239,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
         tracking_number: trackingNumber,
         tracking_url: trackingUrl,
         carrier: carrier,
+        ship_date: shipDate,
+        estimated_delivery: estimatedDelivery,
+        ...orderDetails,
       }),
       {
         headers: { "Content-Type": "application/json", ...corsHeaders },
