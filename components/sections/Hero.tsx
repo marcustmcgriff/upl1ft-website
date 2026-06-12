@@ -24,7 +24,8 @@ export function Hero() {
       <div className="relative z-10 container mx-auto px-4 text-center">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Main Headline */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-display uppercase tracking-wider text-accent gold-glow animate-glow leading-tight whitespace-nowrap">
+          {/* Fluid size keeps the full headline on one line on narrow phones */}
+          <h1 className="text-[min(8vw,3.75rem)] lg:text-7xl font-display uppercase tracking-wider text-accent gold-glow animate-glow leading-tight whitespace-nowrap">
             Carry Your Cross
           </h1>
 

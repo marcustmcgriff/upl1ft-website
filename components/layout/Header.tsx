@@ -23,7 +23,7 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto px-4">
-          <div className="flex h-20 items-center justify-between">
+          <div className="relative flex h-20 items-center justify-between">
             {/* Mobile Menu Button */}
             <button
               className="md:hidden"
@@ -33,10 +33,10 @@ export function Header() {
               <Menu className="h-6 w-6 text-foreground" />
             </button>
 
-            {/* Logo */}
+            {/* Logo — truly centered on mobile regardless of icon widths */}
             <Link
               href="/"
-              className="gold-glow-hover"
+              className="gold-glow-hover absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0"
             >
               <Image
                 src="/images/upl1ft-logo.png"
