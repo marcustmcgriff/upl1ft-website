@@ -184,7 +184,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               className={`text-xs border px-2 py-0.5 transition-colors cursor-pointer ${
                 selectedSize === size
                   ? "border-accent text-accent bg-accent/10"
-                  : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+                  : "border-accent/40 text-foreground/80 hover:border-accent hover:text-accent"
               }`}
             >
               {size}
