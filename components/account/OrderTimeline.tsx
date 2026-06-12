@@ -20,6 +20,8 @@ interface OrderTimelineProps {
   createdAt?: string;
   shipDate?: string | null;
   estimatedDelivery?: string | null;
+  /** Pre-ship approximate window, e.g. "Jun 19 – Jun 26" */
+  estimatedRange?: string | null;
 }
 
 export function OrderTimeline({
@@ -27,6 +29,7 @@ export function OrderTimeline({
   createdAt,
   shipDate,
   estimatedDelivery,
+  estimatedRange,
 }: OrderTimelineProps) {
   const currentIndex = steps.findIndex((s) => s.key === status);
 
@@ -71,6 +74,8 @@ export function OrderTimeline({
             description = "Your order has arrived";
           } else if (estimatedDelivery) {
             description = `Est. ${formatTimelineDate(estimatedDelivery)}`;
+          } else if (estimatedRange) {
+            description = `Est. ${estimatedRange}`;
           }
         }
 

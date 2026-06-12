@@ -18,6 +18,7 @@ import { OrderTimeline } from "@/components/account/OrderTimeline";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import type { Order } from "@/lib/supabase/types";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { estimatedDeliveryRange } from "@/lib/utils";
 
 const statusHero: Record<string, { title: string; subtitle: string }> = {
   confirmed: {
@@ -219,6 +220,14 @@ function OrderDetailContent() {
   const address = order.shipping_address as any;
   const purchasedIds = items.map((item: any) => item.productId);
   const hero = statusHero[order.status] || statusHero.confirmed;
+  const estRange = order.created_at
+    ? estimatedDeliveryRange(order.created_at)
+    : null;
+  const showPreShipEstimate =
+    !order.tracking_number &&
+    order.status !== "delivered" &&
+    order.status !== "cancelled" &&
+    !!estRange;
 
   return (
     <div className="space-y-10">
@@ -263,6 +272,7 @@ function OrderDetailContent() {
           createdAt={order.created_at}
           shipDate={shipDate}
           estimatedDelivery={estimatedDelivery}
+          estimatedRange={estRange}
         />
       </div>
 
@@ -346,11 +356,26 @@ function OrderDetailContent() {
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-3 py-3">
-              <div className="pulse-dot" />
-              <p className="text-muted-foreground text-sm">
-                Tracking info will appear once your order ships.
-              </p>
+            <div className="space-y-4">
+              {showPreShipEstimate && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-accent" />
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider">
+                      Estimated Delivery
+                    </p>
+                  </div>
+                  <p className="text-foreground text-sm font-medium">
+                    {estRange}
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-3 py-1">
+                <div className="pulse-dot" />
+                <p className="text-muted-foreground text-sm">
+                  A tracking number will appear here once your order ships.
+                </p>
+              </div>
             </div>
           )}
         </div>
