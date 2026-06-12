@@ -38,6 +38,7 @@ interface CartContextType {
   items: CartItem[];
   cartCount: number;
   cartTotal: number;
+  hydrated: boolean;
   addItem: (product: Product, size: string, color: string, quantity?: number) => void;
   removeItem: (index: number) => void;
   updateQuantity: (index: number, quantity: number) => void;
@@ -279,7 +280,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, cartCount, cartTotal, addItem, removeItem, updateQuantity, clearCart, toast, setToast, isDrawerOpen, openDrawer, closeDrawer }}
+      value={{ items, cartCount, cartTotal, hydrated, addItem, removeItem, updateQuantity, clearCart, toast, setToast, isDrawerOpen, openDrawer, closeDrawer }}
     >
       {children}
     </CartContext.Provider>

@@ -194,8 +194,17 @@ export function CartDrawer() {
               </span>
             </div>
 
-            {/* Checkout Button */}
-            <Link href="/checkout" onClick={closeDrawer} className="block">
+            {/* Checkout Button — clear stale discount/gift options from a prior visit */}
+            <Link
+              href="/checkout"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem("upl1ft-checkout-opts");
+                } catch {}
+                closeDrawer();
+              }}
+              className="block"
+            >
               <Button className="w-full" size="lg">
                 Checkout
               </Button>
