@@ -182,7 +182,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     className={`px-4 py-2 border ${
                       selectedColor === color
                         ? "border-accent bg-accent/10"
-                        : "border-border hover:border-accent/50"
+                        : "border-accent/50 hover:border-accent"
                     } transition-colors text-sm`}
                   >
                     {color}
@@ -203,8 +203,8 @@ export function ProductDetail({ product }: { product: Product }) {
                   onClick={() => setSelectedSize(size)}
                   className={`px-4 py-2 border ${
                     selectedSize === size
-                      ? "border-accent bg-accent/10"
-                      : "border-border hover:border-accent/50"
+                      ? "border-accent text-accent-foreground bg-accent font-semibold"
+                      : "border-accent/50 hover:border-accent"
                   } transition-colors text-sm`}
                 >
                   {size}

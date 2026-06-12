@@ -129,9 +129,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             </div>
           )}
 
-          {/* Quick Add Button - Shown on Hover (desktop) */}
+          {/* Quick Add Button - Shown on Hover (desktop only; on touch it causes
+              iOS double-tap-to-click and intercepts taps while invisible) */}
           <div
-            className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            className="absolute bottom-4 left-4 right-4 hidden md:block opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
             onClick={(e) => e.preventDefault()}
           >
             {isMembersOnly ? (
@@ -183,8 +184,8 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               onClick={() => setSelectedSize(size)}
               className={`text-xs border px-2 py-0.5 transition-colors cursor-pointer ${
                 selectedSize === size
-                  ? "border-accent text-accent bg-accent/10"
-                  : "border-accent/40 text-foreground/80 hover:border-accent hover:text-accent"
+                  ? "border-accent text-accent-foreground bg-accent font-semibold"
+                  : "border-accent/60 bg-black/70 text-foreground hover:border-accent hover:text-accent"
               }`}
             >
               {size}
