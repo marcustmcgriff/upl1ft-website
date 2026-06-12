@@ -2,7 +2,8 @@
 // Both are no-ops unless the corresponding NEXT_PUBLIC_ env var is set at build time.
 
 export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "";
-export const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "";
+// "UPL1FT Pixel" dataset under the Sprucely, LLC business portfolio
+export const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "2393561987796049";
 
 declare global {
   interface Window {
