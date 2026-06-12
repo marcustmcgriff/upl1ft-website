@@ -57,3 +57,4 @@ start-dev.bat
 .dev.vars
 wrangler.toml
 .wrangler/
+supabase-v2-keys.local.txt
