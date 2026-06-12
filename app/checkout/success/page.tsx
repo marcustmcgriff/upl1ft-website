@@ -9,13 +9,35 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { products } from "@/lib/data/products";
 import { formatPrice } from "@/lib/utils";
 import { CheckCircle, UserPlus, Truck } from "lucide-react";
+import { trackPurchase } from "@/lib/analytics";
 
 export default function CheckoutSuccessPage() {
   const { clearCart } = useCart();
   const { user } = useAuth();
 
-  // Clear cart on mount (successful payment)
+  // Fire purchase conversion (deduped per Stripe session), then clear cart
   useEffect(() => {
+    try {
+      const sessionId = new URLSearchParams(window.location.search).get("session_id");
+      const dedupeKey = `upl1ft-purchase-${sessionId || "unknown"}`;
+      if (sessionId && !sessionStorage.getItem(dedupeKey)) {
+        const stored = localStorage.getItem("upl1ft-cart");
+        const items: { product: { price: number }; quantity: number }[] = stored
+          ? JSON.parse(stored)
+          : [];
+        const total = items.reduce(
+          (sum, item) => sum + item.product.price * item.quantity,
+          0
+        );
+        const count = items.reduce((sum, item) => sum + item.quantity, 0);
+        if (total > 0) {
+          trackPurchase(total, count, sessionId);
+        }
+        sessionStorage.setItem(dedupeKey, "1");
+      }
+    } catch {
+      // Analytics must never break the confirmation page
+    }
     clearCart();
   }, [clearCart]);
 

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { formatPrice } from "@/lib/utils";
+import { trackBeginCheckout } from "@/lib/analytics";
 import {
   ShoppingBag,
   Lock,
@@ -391,6 +392,10 @@ export default function CheckoutPage() {
               className="w-full"
               onClick={() => {
                 setError("");
+                trackBeginCheckout(
+                  cartTotal,
+                  items.reduce((sum, item) => sum + item.quantity, 0)
+                );
                 setShowPayment(true);
               }}
             >

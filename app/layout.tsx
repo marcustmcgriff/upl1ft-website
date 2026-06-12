@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { Analytics } from "@/components/analytics/Analytics";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -71,9 +72,9 @@ export default function RootLayout({
           </CartProvider>
         </AuthProvider>
 
-        {/* Analytics Placeholders */}
-        {/* TODO: Add GA4 tracking ID */}
-        {/* TODO: Add Meta Pixel ID */}
+        {/* GA4 + Meta Pixel — active only when NEXT_PUBLIC_GA_MEASUREMENT_ID /
+            NEXT_PUBLIC_META_PIXEL_ID are set at build time */}
+        <Analytics />
       </body>
     </html>
   );

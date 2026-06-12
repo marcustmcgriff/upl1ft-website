@@ -10,6 +10,7 @@ import { formatPrice, calculateDiscount } from "@/lib/utils";
 import { ShoppingBag, ChevronLeft, ChevronRight, Check, Lock } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { trackAddToCart } from "@/lib/analytics";
 
 export function ProductDetail({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -35,6 +36,7 @@ export function ProductDetail({ product }: { product: Product }) {
       return;
     }
     addItem(product, selectedSize, selectedColor);
+    trackAddToCart(product.name, product.id, product.price);
     openDrawer();
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
