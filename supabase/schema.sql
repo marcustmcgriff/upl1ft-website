@@ -70,6 +70,7 @@ CREATE TABLE public.orders (
   stripe_session_id TEXT UNIQUE NOT NULL,
   stripe_payment_intent_id TEXT,
   printful_order_id TEXT,
+  tracking_token TEXT UNIQUE,
   status TEXT DEFAULT 'confirmed',
   tracking_number TEXT,
   tracking_url TEXT,
