@@ -1,0 +1,44 @@
+name: Supabase Keep-Alive
+
+# Keeps the free-tier Supabase project active so it never sits idle long enough
+# (~7 days) to auto-pause. A paused project loses its DNS subdomain, which breaks
+# ALL login (Google + email/password) and the database on upl1ft.org.
+#
+# How it works: a tiny daily request to the Supabase REST API using the PUBLIC anon
+# key (the same key already shipped in the website bundle — safe to inline; Row Level
+# Security protects the data). A request with a valid apikey reaches Postgres, which
+# registers as activity and resets the idle timer.
+#
+# Notes / caveats:
+# - Scheduled workflows run ONLY on the default branch (main) — that's why this lives here.
+# - GitHub disables scheduled workflows after 60 days with NO repo commits. As long as the
+#   project sees a commit (or the live site sees traffic) within any 60-day window, this
+#   keeps running. Re-enable from the Actions tab if it's ever auto-disabled.
+# - You can run it on demand anytime from Actions -> "Supabase Keep-Alive" -> Run workflow.
+
+on:
+  schedule:
+    - cron: "17 8 * * *"   # daily at 08:17 UTC (off-peak; GitHub skews on-the-hour crons)
+  workflow_dispatch: {}     # manual trigger button in the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST to register activity
+        run: |
+          BASE="https://hcdxflvltfppavnytalb.supabase.co"
+          # Public anon key (already exposed in the client bundle; RLS guards the data).
+          KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZHhmbHZsdGZwcGF2bnl0YWxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNzQyNjYsImV4cCI6MjA5Njg1MDI2Nn0.K12Jvt08d_2DrVUa8AUd3QDXEIkev-eME7fY2XoD3sc"
+          code=$(curl -sS -m 30 -o /dev/null -w "%{http_code}" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            "$BASE/rest/v1/profiles?select=id&limit=1")
+          echo "Supabase REST responded: HTTP $code"
+          # Any real response below 500 means the project is awake and served the request.
+          # Only a connection failure (000) or a 5xx indicates it's down / paused.
+          if [ "$code" = "000" ] || [ "$code" -ge 500 ]; then
+            echo "::error::Supabase looks unreachable or paused (HTTP $code)."
+            exit 1
+          fi
+          echo "Keep-alive OK — project is active."
