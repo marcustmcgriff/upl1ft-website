@@ -1,4 +1,4 @@
-import { Product } from '../types';
+import { Product, Testimonial } from '../types';
 
 export const products: Product[] = [
   {
@@ -167,20 +167,6 @@ export const collections: any[] = [
   },
 ];
 
-export const testimonials = [
-  {
-    id: '1',
-    name: 'Marcus T.',
-    quote: 'This brand gets it. Quality is unmatched, message is clear. Wearing UPL1FT reminds me daily what I\'m fighting for.',
-  },
-  {
-    id: '2',
-    name: 'David R.',
-    quote: 'Finally, streetwear that speaks to my faith without being corny. The craftsmanship is premium.',
-  },
-  {
-    id: '3',
-    name: 'Isaiah M.',
-    quote: 'The It Is Written tee is the best piece I own. Bold design, premium feel, and the message hits every time I put it on.',
-  },
-];
+// Real customer quotes only, with the customer's permission. The home page shows the
+// Testimonies section as soon as this list has an entry and hides it while it is empty.
+export const testimonials: Testimonial[] = [];

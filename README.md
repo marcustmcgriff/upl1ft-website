@@ -53,7 +53,6 @@ uplift-website/
 │   │   ├── page.tsx            # Shop grid with filters
 │   │   └── [slug]/page.tsx     # Product detail pages
 │   ├── about/page.tsx           # Brand doctrine/mission
-│   ├── lookbook/page.tsx        # Editorial imagery
 │   ├── cart/page.tsx            # Shopping cart
 │   ├── checkout/page.tsx        # Checkout (Stripe embedded payment form)
 │   └── legal/                   # Legal pages
@@ -136,17 +135,6 @@ public/images/collections/
   └── accessories.jpg
 ```
 
-### Lookbook Images (aspect ratio 3:4, 1200x1600px)
-```
-public/images/lookbook/
-  ├── look1.jpg
-  ├── look2.jpg
-  ├── look3.jpg
-  ├── look4.jpg
-  ├── look5.jpg
-  └── look6.jpg
-```
-
 ## 🛍️ Managing Products
 
 A product lives in two files that must agree:
@@ -203,7 +191,6 @@ Add Meta Pixel tracking in `app/layout.tsx`
 - [x] Shopping cart UI (frontend only)
 - [x] Checkout page structure
 - [x] About/Doctrine page
-- [x] Lookbook gallery
 - [x] Newsletter signup UI
 - [x] Legal pages (Privacy, Terms, Refunds)
 - [x] Sticky header with navigation

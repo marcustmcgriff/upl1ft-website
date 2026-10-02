@@ -13,7 +13,6 @@
 ## Navigation
 
 - Shop
-- Lookbook
 - The Doctrine
 
 ---
@@ -92,21 +91,12 @@
 
 ## Testimonies Section
 
+**Status:** hidden. The section shows itself as soon as `testimonials` in `lib/data/products.ts` has an entry. Add real customer quotes only, with the customer's permission (the placeholder quotes were removed on 2 Oct 2026).
+
 **Headline:** Testimonies
 **Subheading:** From those who carry the message daily.
 
-### Testimonials:
-
-**Marcus T.**
-> "This brand gets it. Quality is unmatched, message is clear. Wearing UPL1FT reminds me daily what I'm fighting for."
-
-**David R.**
-> "Finally, streetwear that speaks to my faith without being corny. The craftsmanship is premium."
-
-**Isaiah M.**
-> "The Carry Your Cross hoodie is the best piece I own. Heavy, bold, and every detail matters."
-
-**Background:** Concrete Wall mirrored (testimonials-bg.png) — flipped vertically with scaleY(-1)
+**Background:** Concrete wall, flipped vertically with scaleY(-1)
 
 ---
 
@@ -160,7 +150,6 @@ All products are AS Colour 5080 heavy oversized tees (boxy fit, dropped shoulder
 
 ### Company Links
 - About / The Doctrine
-- Lookbook
 - Terms of Service
 - Privacy Policy
 - Refund Policy
@@ -181,10 +170,28 @@ Join the movement. Get updates on new drops and exclusive content.
 
 | Section | Image | Position | Overlay |
 |---------|-------|----------|---------|
-| Hero | st-michael.png | center 25% | from-black/60 via-black/60 to-black/75 |
-| Featured Drops | st-michael.png | center 80% | from-black/70 via-black/40 to-black/70 |
-| Testimonies | testimonials-bg.png (flipped) | center 0% | from-black/70 via-black/60 to-black/85 |
-| Newsletter | creation-of-adam.png | center 35% | from-black/85 via-black/55 to-black/85 |
+| Hero | st-michael.webp, st-michael-1200.webp on phones (light copies of st-michael.png) | center 25% | from-black/60 via-black/60 to-black/75 |
+| Featured Drops | same files as the hero | center 80% | from-black/70 via-black/40 to-black/70 |
+| Testimonies (hidden for now) | concrete-wall.webp, concrete-wall-1000.webp on phones (light copies of category-bg.jpg), flipped | center 0% | from-black/70 via-black/60 to-black/85 |
+| Newsletter | creation-of-adam.webp (light copy of creation-of-adam.png) | center 35% | from-black/85 via-black/55 to-black/85 |
+
+---
+
+## Refund Policy (/legal/refunds)
+
+Every piece is made to order, so all sales are final. The page promises only what the print supplier covers, inside the supplier's own time limits:
+
+| Case | What the customer gets | Customer's time limit | Supplier's limit |
+|------|------------------------|-----------------------|------------------|
+| Damaged, misprinted or wrong item | Free replacement (refund only if it cannot be replaced); photos required, nothing sent back | 14 days from delivery | 30 days from delivery |
+| Order never arrives | Free replacement once the carrier has not delivered 30 days after shipping | Must write within 28 days of the shipping email | Claim in the week after 30 days in transit |
+| Wrong size or color ordered, change of mind | Nothing: no returns, exchanges or refunds | n/a | Not covered |
+| Wrong address, refused or unclaimed package | No refund; made and shipped again at the customer's expense | n/a | Not covered |
+| Tracking shows delivered | No replacement or refund | n/a | Reviewed case by case |
+
+Not defects: print within 0.5 in of the photos, measurements within 1.5 in of the size guide, small color differences, scent or residue that washes out, wear from washing against the care instructions.
+
+Orders cannot be changed or cancelled once paid (they go to print at once). Contact address on the page: support@upl1ft.org. The numbers are constants at the top of `app/legal/refunds/page.tsx`; do not lengthen them past the supplier's limits. The same "all sales are final" line appears on the product page, under the payment form and beside Stripe's pay button (`custom_text` in `functions/api/create-checkout-session.ts`). The product page has a size guide (`lib/data/sizeGuide.ts`).
 
 ---
 

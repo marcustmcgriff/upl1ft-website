@@ -2,6 +2,9 @@ import { testimonials } from "@/lib/data/products";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function Testimonials() {
+  // No section until there are real quotes to show (see lib/data/products.ts)
+  if (testimonials.length === 0) return null;
+
   return (
     <section className="relative py-20 overflow-hidden">
       {/* Creation of Adam Background */}
