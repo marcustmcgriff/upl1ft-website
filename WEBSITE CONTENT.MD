@@ -53,7 +53,7 @@
 - **Sizes:** S, M, L, XL, 2XL, 3XL
 - **Images:** /images/products/it-is-written/ (pine-* and black-*: back, front, person, pback, pclose)
 
-### COMFORT KILLS POTENTIAL — $60.00 (coming soon)
+### COMFORT KILLS POTENTIAL — $60.00 (available)
 - **Tags:** Featured
 - **Blank:** Heavy Oversized Tee | AS Colour 5080
 - **Colors:** Pine Green, Black
@@ -63,7 +63,7 @@
 - **Sizes:** S, M, L, XL, 2XL, 3XL
 - **Images:** /images/products/comfort-kills-potential/
 
-### HIS PAIN, OUR GAIN — $60.00 (coming soon)
+### HIS PAIN, OUR GAIN — $60.00 (available)
 - **Tags:** Featured
 - **Blank:** Heavy Oversized Tee | AS Colour 5080
 - **Colors:** Pine Green, Black
@@ -73,7 +73,7 @@
 - **Sizes:** S, M, L, XL, 2XL, 3XL
 - **Images:** /images/products/his-pain-our-gain/
 
-### LIVE BY FAITH, NOT BY SIGHT — $60.00 (coming soon)
+### LIVE BY FAITH, NOT BY SIGHT — $60.00 (available)
 - **Tags:** Featured
 - **Blank:** Heavy Oversized Tee | AS Colour 5080
 - **Colors:** Pine Green, Black
@@ -121,9 +121,9 @@ All products are AS Colour 5080 heavy oversized tees (boxy fit, dropped shoulder
 | # | Product | Price | Status | Print Placements |
 |---|---------|-------|--------|------------------|
 | 4 | IT IS WRITTEN | $60.00 | Available | Front (left chest), Back |
-| 2 | COMFORT KILLS POTENTIAL | $60.00 | Coming Soon | Front, Back |
-| 3 | HIS PAIN, OUR GAIN | $60.00 | Coming Soon | Front (left chest), Back |
-| 1 | LIVE BY FAITH, NOT BY SIGHT | $60.00 | Coming Soon | Front |
+| 2 | COMFORT KILLS POTENTIAL | $60.00 | Available | Front, Back |
+| 3 | HIS PAIN, OUR GAIN | $60.00 | Available | Front (left chest), Back (upper back) |
+| 1 | LIVE BY FAITH, NOT BY SIGHT | $60.00 | Available | Front (left chest) |
 
 ---
 
@@ -203,6 +203,7 @@ Orders cannot be changed or cancelled once paid (they go to print at once). Cont
 - **Printify Integration:** Site product id to Printify product id lives in `functions/api/_printify.ts`. Prices, colors, sizes and which products can be bought live in two files that must agree: `lib/data/products.ts` (what the site shows) and `functions/api/_catalog.ts` (what checkout accepts). `npm test` fails when they disagree.
 - **Order flow:** Stripe payment -> `functions/api/webhook.ts` saves the order, creates the Printify order and submits it to production (steps in `_order-processing.ts`). Printify -> `functions/api/printify-webhook.ts` updates status and tracking and sends the shipped and arrived emails. `functions/api/stock.ts` feeds live stock to the product page.
 - **Images:** Stored locally in `public/images/products/<product>/` (Printify mockups, five views per color)
+- **All four tees are on sale since 2 Oct 2026.** To take one off sale again, reverse these steps.
 - **To put a Coming Soon product on sale:** in `lib/data/products.ts` set `inStock: true` and remove `comingSoon`; in `functions/api/_catalog.ts` set `live: true`; run `npm test`; deploy.
 - **To update products:** Edit both catalog files, replace images in `public/images/products/`, run `npm test`, rebuild & deploy
 - **Cloudflare settings needed:** `PRINTIFY_API_TOKEN` (expires one year after it is generated in Printify; current one was generated 18 Sep 2026), `PRINTIFY_SHOP_ID`, `PRINTIFY_WEBHOOK_SECRET`, plus the existing Stripe, Supabase and Resend settings. Values are read when the site is deployed: after changing one (`npx wrangler pages secret put NAME --project-name upl1ft-website`), redeploy (Cloudflare Pages, Deployments, Retry deployment, or push a commit)

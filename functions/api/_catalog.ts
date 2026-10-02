@@ -48,7 +48,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
   "2": {
     name: "COMFORT KILLS POTENTIAL",
     price: 6000,
-    live: false,
+    live: true,
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("comfort-kills-potential", "back"),
@@ -57,7 +57,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
   "3": {
     name: "HIS PAIN, OUR GAIN",
     price: 6000,
-    live: false,
+    live: true,
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("his-pain-our-gain", "back"),
@@ -66,7 +66,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
   "1": {
     name: "LIVE BY FAITH, NOT BY SIGHT",
     price: 6000,
-    live: false,
+    live: true,
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("live-by-faith", "front"),
@@ -89,7 +89,8 @@ export function catalogImage(id: string, color?: string): string {
 }
 
 // A cart line is {p,s,c,q} JSON in one Stripe metadata value (500 characters max).
-// Twelve lines (one product in both colors and all six sizes) fit; checkout also
-// measures the real value and refuses a cart that would not fit.
-export const MAX_CART_LINES = 12;
+// Any eleven lines fit, whichever products, sizes and colors they are (a twelfth can
+// push the longest lines past 500); tests/catalog.test.mjs checks the worst case.
+// Checkout also measures the real value and refuses a cart that would not fit.
+export const MAX_CART_LINES = 11;
 export const MAX_QTY_PER_LINE = 10;

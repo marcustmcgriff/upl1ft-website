@@ -76,8 +76,7 @@ export const products: Product[] = [
     sizes: ['S', 'M', 'L', 'XL', '2XL', '3XL'],
     colors: ['Pine Green', 'Black'],
     featured: true,
-    inStock: false,
-    comingSoon: true,
+    inStock: true,
   },
   {
     id: '3',
@@ -114,8 +113,7 @@ export const products: Product[] = [
     sizes: ['S', 'M', 'L', 'XL', '2XL', '3XL'],
     colors: ['Pine Green', 'Black'],
     featured: true,
-    inStock: false,
-    comingSoon: true,
+    inStock: true,
   },
   {
     id: '1',
@@ -152,8 +150,7 @@ export const products: Product[] = [
     sizes: ['S', 'M', 'L', 'XL', '2XL', '3XL'],
     colors: ['Pine Green', 'Black'],
     featured: true,
-    inStock: false,
-    comingSoon: true,
+    inStock: true,
   },
 ];
 

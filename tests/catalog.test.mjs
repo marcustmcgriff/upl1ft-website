@@ -77,6 +77,8 @@ test("the largest cart the site can build fits in Stripe metadata", () => {
   const live = Object.entries(server.PRODUCT_CATALOG).filter(([, p]) => p.live);
   const lines = [];
   for (const [id, p] of live) for (const c of p.colors) for (const s of p.sizes) lines.push({ p: id, s, c, q: server.MAX_QTY_PER_LINE });
+  // The worst case: the lines with the longest text, across every product on sale.
+  lines.sort((a, b) => JSON.stringify(b).length - JSON.stringify(a).length);
   const biggest = lines.slice(0, server.MAX_CART_LINES);
   assert.ok(JSON.stringify(biggest).length <= 500, `${JSON.stringify(biggest).length} characters`);
 });
