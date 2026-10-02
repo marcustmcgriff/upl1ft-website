@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service | UPL1FT",
@@ -14,7 +15,7 @@ export default function TermsPage() {
 
         <div className="prose prose-invert max-w-none space-y-6 text-foreground/90">
           <p className="text-sm text-muted-foreground">
-            Last updated: February 7, 2026
+            Last updated: October 2, 2026
           </p>
 
           <section>
@@ -46,6 +47,21 @@ export default function TermsPage() {
               We strive to provide accurate product descriptions and images.
               However, we do not warrant that product descriptions or other
               content is accurate, complete, reliable, current, or error-free.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-display text-accent mb-4">
+              Orders and Refunds
+            </h2>
+            <p>
+              Every item is made to order and all sales are final. By placing
+              an order you agree to our{" "}
+              <Link href="/legal/refunds" className="text-accent underline">
+                Refund Policy
+              </Link>
+              , which sets out what we replace or refund and the time limits
+              that apply.
             </p>
           </section>
 

@@ -11,6 +11,7 @@ import { ShoppingBag, ChevronLeft, ChevronRight, Check, Lock } from "lucide-reac
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAddToCart } from "@/lib/analytics";
+import { SIZE_TOLERANCE_IN, teeSizeGuide } from "@/lib/data/sizeGuide";
 
 // Answer of /api/stock: color -> size -> can be ordered. null = stock unknown.
 type Stock = Record<string, Record<string, boolean>> | null;
@@ -30,6 +31,7 @@ export function ProductDetail({ product }: { product: Product }) {
   );
   const [selectedImage, setSelectedImage] = useState(0);
   const [showStory, setShowStory] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [added, setAdded] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const { addItem, openDrawer } = useCart();
@@ -278,6 +280,50 @@ export function ProductDetail({ product }: { product: Product }) {
                   Crossed-out sizes are temporarily sold out in {selectedColor}.
                 </p>
               )}
+
+              {/* Sales are final, so the measurements have to be easy to find */}
+              {product.category === "tees" && (
+                <div className="mt-3">
+                  <button
+                    onClick={() => setShowSizeGuide(!showSizeGuide)}
+                    aria-expanded={showSizeGuide}
+                    className="text-xs uppercase tracking-wider text-accent underline underline-offset-4"
+                  >
+                    Size guide {showSizeGuide ? "−" : "+"}
+                  </button>
+                  {showSizeGuide && (
+                    <div className="mt-3 text-sm">
+                      <table className="w-full text-left border border-border">
+                        <thead>
+                          <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
+                            <th className="px-3 py-2 font-normal">Size</th>
+                            <th className="px-3 py-2 font-normal">Chest width</th>
+                            <th className="px-3 py-2 font-normal">Length</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {teeSizeGuide.map((row) => (
+                            <tr
+                              key={row.size}
+                              className={`border-b border-border last:border-0 ${
+                                selectedSize === row.size ? "text-accent" : ""
+                              }`}
+                            >
+                              <td className="px-3 py-2">{row.size}</td>
+                              <td className="px-3 py-2">{row.width.toFixed(1)} in</td>
+                              <td className="px-3 py-2">{row.length.toFixed(1)} in</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Oversized, boxy fit. Measured flat: width across the chest, length from the
+                        top of the shoulder to the hem. Allow up to {SIZE_TOLERANCE_IN} in either way.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -348,6 +394,12 @@ export function ProductDetail({ product }: { product: Product }) {
               <p>• Free shipping on all orders</p>
               <p>• Made to order. Arrives in 5-10 business days</p>
               <p>• US shipping only</p>
+              <p>
+                • All sales are final. Damaged or misprinted items are replaced free.{" "}
+                <Link href="/legal/refunds" className="underline hover:text-foreground">
+                  Refund policy
+                </Link>
+              </p>
             </div>
           )}
         </div>

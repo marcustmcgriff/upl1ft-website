@@ -249,6 +249,13 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           },
         },
       ],
+      // Shown beside the pay button, so the customer has seen the policy before paying
+      // (it is also the evidence a payment dispute asks for).
+      custom_text: {
+        submit: {
+          message: `Made to order: all sales are final. Damaged or misprinted items are replaced free. [Refund policy](${origin}/legal/refunds)`,
+        },
+      },
       expires_at: Math.floor(Date.now() / 1000) + SESSION_LIFETIME_SECONDS,
       metadata: {
         order_items: orderItemsMeta,

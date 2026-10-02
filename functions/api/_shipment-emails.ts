@@ -260,6 +260,17 @@ export function buildDeliveredEmailHtml(data: DeliveredEmailData): string {
 
     ${orderLinkHtml}
 
+    <!-- The refund policy's time limit starts at delivery, so this is where the customer is told.
+         Keep the days and the address in step with app/legal/refunds/page.tsx. -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0;">
+        Arrived damaged or misprinted? Email
+        <a href="mailto:support@upl1ft.org" style="color: #C8A24A; text-decoration: none;">support@upl1ft.org</a>
+        within 14 days with your order number and a photo, and we will replace it free.
+        <a href="${data.siteUrl}/legal/refunds" style="color: #C8A24A; text-decoration: none;">Refund policy</a>
+      </p>
+    </div>
+
     ${footer(data.siteUrl)}
   </div>
 </body>

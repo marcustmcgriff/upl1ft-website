@@ -345,6 +345,18 @@ export default function CheckoutPage() {
           <Lock className="inline h-3 w-3 mr-1" />
           Secure checkout powered by Stripe
         </p>
+        {/* The policy has to be in front of the customer before they pay. Opens in a new
+            tab so the payment form is not lost. */}
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          Made to order, so all sales are final. Damaged or misprinted items are replaced free.{" "}
+          <Link
+            href="/legal/refunds"
+            target="_blank"
+            className="underline hover:text-foreground"
+          >
+            Refund policy
+          </Link>
+        </p>
       </div>
     </div>
   );
