@@ -22,7 +22,7 @@ const COLORS = ["Pine Green", "Black"];
 // Browsers keep product photos for hours. The version in the address makes them fetch
 // new photos at once: raise it whenever the files under public/images/products change,
 // here and in lib/data/products.ts (tests/catalog.test.mjs fails when they differ).
-export const PHOTO_VERSION = "2";
+export const PHOTO_VERSION = "3";
 
 function photo(file: string): string {
   return `/images/products/${file}?v=${PHOTO_VERSION}`;
