@@ -13,6 +13,7 @@ import { Product } from "@/lib/types";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase, supabaseConfigured } from "@/lib/supabase/client";
 import { products as allProducts } from "@/lib/data/products";
+import { isPurchasable } from "@/lib/utils";
 
 export interface CartItem {
   product: Product;
@@ -24,6 +25,7 @@ export interface CartItem {
 export interface CartToastData {
   product: Product;
   size: string;
+  color?: string;
 }
 
 // Lightweight cart entry for Supabase storage (no full product object)
@@ -54,11 +56,39 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = "upl1ft-cart";
 
+// Most the server accepts per cart line (MAX_QTY_PER_LINE in functions/api/_catalog.ts)
+export const MAX_QTY_PER_LINE = 10;
+
+// Check a saved cart against the current catalog. Reads both stored shapes:
+// localStorage lines ({ product, size, color, quantity }) and Supabase entries
+// ({ productId, size, color, quantity }). The product always comes from the catalog,
+// never from the stored snapshot. Lines that can no longer be bought are dropped.
+function sanitizeCart(stored: unknown): CartItem[] {
+  if (!Array.isArray(stored)) return [];
+  const clean: CartItem[] = [];
+  for (const line of stored) {
+    if (!line || typeof line !== "object") continue;
+    const { productId, product: snapshot, size, color, quantity } = line as Record<string, any>;
+    const id = typeof productId === "string" ? productId : snapshot?.id;
+    const product = allProducts.find((p) => p.id === id);
+    if (!product || !isPurchasable(product)) continue;
+    if (!product.colors.includes(color) || !product.sizes.includes(size)) continue;
+    if (typeof quantity !== "number" || !Number.isFinite(quantity)) continue;
+    clean.push({
+      product,
+      size,
+      color,
+      quantity: Math.min(MAX_QTY_PER_LINE, Math.max(1, Math.trunc(quantity))),
+    });
+  }
+  return clean;
+}
+
 function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
+    return stored ? sanitizeCart(JSON.parse(stored)) : [];
   } catch {
     return [];
   }
@@ -82,20 +112,9 @@ function toEntries(items: CartItem[]): CartEntry[] {
   }));
 }
 
-// Hydrate lightweight entries back to full CartItems
-function fromEntries(entries: CartEntry[]): CartItem[] {
-  return entries
-    .map((entry) => {
-      const product = allProducts.find((p) => p.id === entry.productId);
-      if (!product) return null;
-      return {
-        product,
-        size: entry.size,
-        color: entry.color,
-        quantity: entry.quantity,
-      };
-    })
-    .filter(Boolean) as CartItem[];
+// Hydrate lightweight entries back to full CartItems (checked against the catalog)
+function fromEntries(entries: unknown): CartItem[] {
+  return sanitizeCart(entries);
 }
 
 // Merge two cart arrays, combining quantities for duplicate items
@@ -156,13 +175,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .single();
 
         if (data?.cart_data && Array.isArray(data.cart_data)) {
-          const remoteItems = fromEntries(data.cart_data as CartEntry[]);
+          // Lines the catalog no longer sells are dropped here
+          const remoteItems = fromEntries(data.cart_data);
           setItems((localItems) => {
             // Local cart has items — keep it as-is (user's current intent)
             if (localItems.length > 0) return localItems;
             // Local cart empty — restore from remote
             return remoteItems;
           });
+          // No extra write needed: the debounced save below stores whichever cart
+          // was kept, so the dropped lines leave the Supabase copy too.
         }
       } catch {
         // Supabase unavailable or column doesn't exist yet — continue with local cart
@@ -221,6 +243,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback(
     (product: Product, size: string, color: string, quantity = 1) => {
+      // Coming Soon / out-of-stock products never enter the cart
+      if (!isPurchasable(product)) return;
       setItems((prev) => {
         // Check if same product/size/color already in cart
         const existingIndex = prev.findIndex(
@@ -234,12 +258,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const updated = [...prev];
           updated[existingIndex] = {
             ...updated[existingIndex],
-            quantity: updated[existingIndex].quantity + quantity,
+            quantity: Math.min(
+              MAX_QTY_PER_LINE,
+              updated[existingIndex].quantity + quantity
+            ),
           };
           return updated;
         }
 
-        return [...prev, { product, size, color, quantity }];
+        return [
+          ...prev,
+          { product, size, color, quantity: Math.min(MAX_QTY_PER_LINE, quantity) },
+        ];
       });
     },
     []
@@ -250,7 +280,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateQuantity = useCallback((index: number, quantity: number) => {
-    if (quantity < 1) return;
+    if (quantity < 1 || quantity > MAX_QTY_PER_LINE) return;
     setItems((prev) => {
       const updated = [...prev];
       if (updated[index]) {

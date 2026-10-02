@@ -94,12 +94,19 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  {items.map((item, i) => (
-                    <span key={i}>
-                      {item.name} ({item.size})
-                      {i < items.length - 1 ? ", " : ""}
-                    </span>
-                  ))}
+                  {items.map((item, i) => {
+                    // Older orders may have no color saved
+                    const variant = [item.size, item.color]
+                      .filter(Boolean)
+                      .join(" / ");
+                    return (
+                      <span key={i}>
+                        {item.name}
+                        {variant ? ` (${variant})` : ""}
+                        {i < items.length - 1 ? ", " : ""}
+                      </span>
+                    );
+                  })}
                 </div>
 
                 {order.tracking_number && (

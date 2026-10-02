@@ -1,12 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
+import { deriveOrderState, getOrder, isPrintifyOrderId } from "./_printify";
+import { applyOrderUpdate, type SyncRow } from "./_order-sync";
 
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  PRINTFUL_API_TOKEN: string;
+  PRINTIFY_API_TOKEN: string;
+  PRINTIFY_SHOP_ID?: string;
+  RESEND_API_KEY?: string;
+  ADMIN_EMAIL?: string;
 }
 
-const PRINTFUL_STORE_ID = "17677297";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function getCorsHeaders(request: Request) {
@@ -24,7 +28,7 @@ export const onRequestOptions: PagesFunction<Env> = async (context) => {
 };
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PRINTFUL_API_TOKEN } =
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } =
     context.env;
 
   const corsHeaders = getCorsHeaders(context.request);
@@ -54,7 +58,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       // Guest tracking: lookup by tracking token (no auth required)
       const result = await supabase
         .from("orders")
-        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id, items, created_at, shipping_name, total, subtotal, shipping, discount_amount, discount_code")
+        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id, items, created_at, shipping_name, total, subtotal, shipping, discount_amount, discount_code, customer_email, tracking_token")
         .eq("tracking_token", body.trackingToken)
         .single();
       order = result.data;
@@ -85,7 +89,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
       const result = await supabase
         .from("orders")
-        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id, items, created_at, shipping_name, total, subtotal, shipping, discount_amount, discount_code")
+        .select("id, status, tracking_number, tracking_url, carrier, printful_order_id, items, created_at, shipping_name, total, subtotal, shipping, discount_amount, discount_code, customer_email, tracking_token")
         .eq("id", body.orderId)
         .eq("user_id", user.id)
         .single();
@@ -117,9 +121,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       discount_code: order.discount_code,
     };
 
-    // If no Printful order ID, return current order data
-    if (!order.printful_order_id) {
-      return new Response(
+    // What is stored, for when Printify has nothing newer to say.
+    const stored = () =>
+      new Response(
         JSON.stringify({
           status: order.status,
           tracking_number: order.tracking_number,
@@ -133,114 +137,46 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );
+
+    // The printful_order_id column holds the Printify order id. Orders made before the
+    // supplier change hold a Printful id (digits only), which Printify cannot look up.
+    if (!context.env.PRINTIFY_API_TOKEN || !isPrintifyOrderId(order.printful_order_id)) {
+      return stored();
     }
 
-    // Fetch tracking from Printful
-    const printfulResponse = await fetch(
-      `https://api.printful.com/orders/${order.printful_order_id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
-          "X-PF-Store-Id": PRINTFUL_STORE_ID,
-        },
-      }
-    );
-
-    if (!printfulResponse.ok) {
-      console.error("Printful tracking fetch failed:", printfulResponse.status);
-      return new Response(
-        JSON.stringify({
-          status: order.status,
-          tracking_number: order.tracking_number,
-          tracking_url: order.tracking_url,
-          carrier: order.carrier,
-          ship_date: null,
-          estimated_delivery: null,
-          ...orderDetails,
-        }),
-        {
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+    // The customer is waiting for the page: one short try, then what is stored.
+    const fetched = await getOrder(context.env, order.printful_order_id, { timeoutMs: 4000, retry: false });
+    if (!fetched.ok || !fetched.data) {
+      return stored();
     }
 
-    const printfulData = (await printfulResponse.json()) as any;
-    const printfulOrder = printfulData.result;
-
-    // Map Printful status to our status
-    let newStatus = order.status;
-    const printfulStatus = printfulOrder?.status;
-
-    if (printfulStatus === "fulfilled" || printfulStatus === "shipped") {
-      newStatus = "shipped";
-    } else if (printfulStatus === "canceled" || printfulStatus === "cancelled") {
-      newStatus = "cancelled";
-    } else if (
-      printfulStatus === "inprocess" ||
-      printfulStatus === "pending"
-    ) {
-      newStatus = "processing";
-    }
-
-    // Extract tracking info from shipments
-    let trackingNumber = order.tracking_number;
-    let trackingUrl = order.tracking_url;
-    let carrier = order.carrier;
-    let shipDate: string | null = null;
-    let estimatedDelivery: string | null = null;
-
-    if (printfulOrder?.shipments && printfulOrder.shipments.length > 0) {
-      const shipment = printfulOrder.shipments[0];
-      trackingNumber = shipment.tracking_number || trackingNumber;
-      trackingUrl = shipment.tracking_url || trackingUrl;
-      carrier = shipment.carrier || carrier;
-      shipDate = shipment.ship_date || null;
-      estimatedDelivery = shipment.estimated_delivery || null;
-
-      // Compute estimated delivery as ship_date + 7 business days if not provided
-      if (shipDate && !estimatedDelivery) {
-        const ship = new Date(shipDate);
-        let businessDays = 0;
-        const est = new Date(ship);
-        while (businessDays < 7) {
-          est.setDate(est.getDate() + 1);
-          const day = est.getDay();
-          if (day !== 0 && day !== 6) businessDays++;
-        }
-        estimatedDelivery = est.toISOString().split("T")[0];
-      }
-
-      if (shipment.ship_date) {
-        newStatus = "shipped";
-      }
-    }
-
-    // Update order in Supabase if anything changed
-    if (
-      newStatus !== order.status ||
-      trackingNumber !== order.tracking_number ||
-      trackingUrl !== order.tracking_url ||
-      carrier !== order.carrier
-    ) {
-      await supabase
-        .from("orders")
-        .update({
-          status: newStatus,
-          tracking_number: trackingNumber,
-          tracking_url: trackingUrl,
-          carrier: carrier,
-        })
-        .eq("id", order.id);
-    }
+    // The same reading of the Printify order, and the same write, that the Printify
+    // webhook uses. Several parcels are handled, "delivered" comes from the parcels,
+    // an order never moves backwards, and if this view is the first to notice that the
+    // order shipped or arrived, the customer still gets the email.
+    const state = deriveOrderState(fetched.data);
+    const update = applyOrderUpdate(supabase, context.env, order as SyncRow, {
+      derivedStatus: state.status,
+      trackingNumber: state.shipment?.number || null,
+      trackingUrl: state.shipment?.url || null,
+      carrier: state.shipment?.carrier || null,
+      parcelShipDate: state.shipmentShippedAt,
+      parcelIsLatest: state.shipmentIsLatest,
+      shipDate: state.shipDate,
+      estimatedDelivery: state.estimatedDelivery,
+    });
+    // The write and its email must finish even if the visitor closes the page first.
+    context.waitUntil(update.then(() => undefined, () => undefined));
+    const applied = await update;
 
     return new Response(
       JSON.stringify({
-        status: newStatus,
-        tracking_number: trackingNumber,
-        tracking_url: trackingUrl,
-        carrier: carrier,
-        ship_date: shipDate,
-        estimated_delivery: estimatedDelivery,
+        status: applied.status,
+        tracking_number: applied.trackingNumber,
+        tracking_url: applied.trackingUrl,
+        carrier: applied.carrier,
+        ship_date: state.shipDate,
+        estimated_delivery: state.estimatedDelivery,
         ...orderDetails,
       }),
       {

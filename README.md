@@ -55,7 +55,7 @@ uplift-website/
 │   ├── about/page.tsx           # Brand doctrine/mission
 │   ├── lookbook/page.tsx        # Editorial imagery
 │   ├── cart/page.tsx            # Shopping cart
-│   ├── checkout/page.tsx        # Checkout (Stripe stub)
+│   ├── checkout/page.tsx        # Checkout (Stripe embedded payment form)
 │   └── legal/                   # Legal pages
 │       ├── privacy/page.tsx
 │       ├── terms/page.tsx
@@ -149,57 +149,28 @@ public/images/lookbook/
 
 ## 🛍️ Managing Products
 
-Products are currently managed in `lib/data/products.ts`. To add or edit products:
+A product lives in two files that must agree:
 
-1. Open `lib/data/products.ts`
-2. Add/edit product objects following this structure:
+- `lib/data/products.ts`: what the site shows (name, price, colors, sizes, photos)
+- `functions/api/_catalog.ts`: what checkout accepts and charges
 
-```typescript
-{
-  id: '11',
-  name: 'YOUR PRODUCT NAME',
-  slug: 'your-product-name',
-  price: 75,
-  compareAtPrice: 100,  // Optional: original price for sale items
-  description: 'Short product description',
-  story: 'Scripture-inspired narrative about the product',
-  images: [
-    '/images/products/your-product-front.jpg',
-    '/images/products/your-product-back.jpg',
-  ],
-  category: 'tees', // or 'hoodies', 'bottoms', 'accessories'
-  tags: ['faith', 'premium'],
-  sizes: ['S', 'M', 'L', 'XL'],
-  colors: ['Black', 'White'],
-  featured: true,
-  inStock: true,
-  bestseller: false,
-}
-```
+`functions/api/_printify.ts` maps each site product to its Printify product. Run `npm test`
+after any change: it fails when the two catalogs disagree. The Technical Notes at the end
+of `WEBSITE CONTENT.MD` describe how to put a Coming Soon product on sale.
 
-## 💳 Stripe Integration
+## 💳 Payments and Fulfilment
 
-The checkout page includes a Stripe integration stub. To connect Stripe:
+Checkout is Stripe embedded checkout. Orders are printed and shipped by Printify. The
+server side runs as Cloudflare Pages Functions in `functions/api/`:
 
-1. Install Stripe packages:
-```bash
-npm install @stripe/stripe-js stripe
-```
+- `create-checkout-session.ts` validates the cart, checks stock and opens the payment form
+- `webhook.ts` (Stripe) saves the paid order, creates the Printify order and emails
+  the customer and the owner
+- `printify-webhook.ts` keeps status and tracking current and sends the shipped and
+  arrived emails
+- `session-status.ts` tells the confirmation page whether a checkout was really paid
 
-2. Add environment variables to `.env.local`:
-```
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-```
-
-3. Create API route for Stripe checkout (`app/api/checkout/route.ts`):
-```typescript
-import Stripe from 'stripe';
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-// Implement checkout session creation
-```
-
-4. Update `app/checkout/page.tsx` to use Stripe Elements
+The Technical Notes in `WEBSITE CONTENT.MD` list the settings these need.
 
 ## 📊 Analytics Setup
 
@@ -244,17 +215,9 @@ Add Meta Pixel tracking in `app/layout.tsx`
 - [x] Framer Motion animations
 
 ### 🚧 To Be Implemented
-- [ ] Cart state management (Context API or Zustand)
-- [ ] Stripe payment integration
-- [ ] Newsletter API integration
-- [ ] Product search functionality
-- [ ] Customer reviews system
-- [ ] Size guide modal
-- [ ] Product quick view
-- [ ] Wishlist functionality
-- [ ] Account/authentication pages
-- [ ] Order history
-- [ ] Real-time inventory management
+
+- [ ] Newsletter sign-up connected to an email service
+- [ ] Product reviews
 
 ## 🎨 Color Palette
 
@@ -308,16 +271,14 @@ For CSP, add to `next.config.ts` headers as needed.
 
 ## 🚢 Deployment
 
-### Vercel (Recommended)
-```bash
-npm install -g vercel
-vercel
-```
+The site is a static export served by Cloudflare Pages, with the functions in
+`functions/` deployed alongside it. Pushing to `main` on GitHub deploys it.
 
-### Other Platforms
-- Build command: `npm run build`
-- Output directory: `.next`
-- Node version: 18+
+- Build command: `npx next build`
+- Output directory: `out`
+
+Secrets (Stripe, Supabase, Resend, Printify) are set on the Cloudflare Pages project and
+are read at deploy time, so redeploy after changing one.
 
 ## 📝 Brand Copy Guidelines
 

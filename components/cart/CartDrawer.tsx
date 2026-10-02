@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useCart } from "./CartProvider";
-import { formatPrice } from "@/lib/utils";
+import { useCart, MAX_QTY_PER_LINE } from "./CartProvider";
+import { formatPrice, cartItemImage } from "@/lib/utils";
 
 export function CartDrawer() {
   const {
@@ -107,7 +107,7 @@ export function CartDrawer() {
                     className="relative w-20 h-24 bg-muted overflow-hidden flex-shrink-0"
                   >
                     <Image
-                      src={item.product.images[0]}
+                      src={cartItemImage(item.product, item.color)}
                       alt={item.product.name}
                       fill
                       className="object-cover"
@@ -149,7 +149,8 @@ export function CartDrawer() {
                         </span>
                         <button
                           onClick={() => updateQuantity(index, item.quantity + 1)}
-                          className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                          disabled={item.quantity >= MAX_QTY_PER_LINE}
+                          className="p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
                           aria-label="Increase quantity"
                         >
                           <Plus className="h-3 w-3" />
@@ -194,7 +195,7 @@ export function CartDrawer() {
               </span>
             </div>
 
-            {/* Checkout Button — clear stale discount/gift options from a prior visit */}
+            {/* Checkout Button — clear a stale discount code from a prior visit */}
             <Link
               href="/checkout"
               onClick={() => {

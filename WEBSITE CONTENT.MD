@@ -6,7 +6,7 @@
 **Tagline:** Strength. Discipline. Faith.
 **Description:** Streetwear for the battle-hardened believer.
 **Website:** https://upl1ft.org
-**Print-on-Demand:** Printful (products are NOT auto-synced — manual updates required)
+**Print-on-Demand:** Printify (AS Colour 5080 heavy oversized tee, DTG print). Orders are created through the Printify API when Stripe confirms a payment; a cart line is matched to a Printify variant by its size and color (variant titles read "Size / Color", for example "XL / Pine Green").
 
 ---
 
@@ -44,45 +44,45 @@
 
 **Featured Products:**
 
-### 1. LIVE BY FAITH, NOT BY SIGHT — $40.00
+### IT IS WRITTEN — $60.00 (available)
 - **Tags:** Bestseller, Featured
-- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
-- **Color:** Faded Black
-- **Print Placements:** Front, Inside Label
-- **Description:** Oversized faded tee with bold front print. Walk by faith, not by what you see.
-- **Story:** "For we walk by faith, not by sight." — 2 Corinthians 5:7. The world shows you one thing. Faith reveals another. This tee is a declaration—you move by conviction, not by circumstance.
-- **Sizes:** S, M, L, XL, 2XL, 3XL
-- **Image:** /images/products/live-by-faith-front.png
-
-### 2. COMFORT KILLS POTENTIAL — $40.00
-- **Tags:** Bestseller, Featured
-- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
-- **Color:** Faded Black
-- **Print Placements:** Front, Back, Inside Label
-- **Description:** Oversized faded tee with front, back, and inside label prints. Comfort is the enemy of greatness.
-- **Story:** "No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness and peace for those who have been trained by it." — Hebrews 12:11. Comfort is the quiet killer of purpose. Step out of ease and into your calling.
-- **Sizes:** S, M, L, XL, 2XL, 3XL
-- **Image:** /images/products/comfort-kills-potential-front.png
-
-### 3. HIS PAIN, OUR GAIN — $40.00
-- **Tags:** Featured
-- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
-- **Color:** Faded Black
-- **Print Placements:** Front, Back
-- **Description:** Oversized faded tee with front and back print. A tribute to the sacrifice that set us free.
-- **Story:** "But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." — Isaiah 53:5. His suffering was not in vain. Every wound carried purpose. Wear this truth.
-- **Sizes:** S, M, L, XL, 2XL, 3XL
-- **Image:** /images/products/his-pain-our-gain-front.png
-
-### 4. IT IS WRITTEN — $40.00
-- **Tags:** Bestseller, Featured
-- **Blank:** Oversized Faded T-Shirt | AS Colour 5082
-- **Color:** Faded Black
-- **Print Placements:** Front, Back, Inside Label
-- **Description:** Oversized faded tee with front, back, and inside label prints. The Word stands forever.
+- **Blank:** Heavy Oversized Tee | AS Colour 5080
+- **Colors:** Pine Green, Black
+- **Print Placements:** Front (left chest), Back
+- **Description:** Heavyweight oversized tee — boxy, structured fit. Blackletter "it is written" on the left chest, the archangel Michael across the back. Premium direct-to-garment print on AS Colour 5080. Free shipping.
 - **Story:** "It is written: Man shall not live on bread alone, but on every word that comes from the mouth of God." — Matthew 4:4. When temptation came, Jesus answered with Scripture. The Word is your weapon. Carry it boldly.
 - **Sizes:** S, M, L, XL, 2XL, 3XL
-- **Image:** /images/products/it-is-written-front.png
+- **Images:** /images/products/it-is-written/ (pine-* and black-*: back, front, person, pback, pclose)
+
+### COMFORT KILLS POTENTIAL — $60.00 (coming soon)
+- **Tags:** Featured
+- **Blank:** Heavy Oversized Tee | AS Colour 5080
+- **Colors:** Pine Green, Black
+- **Print Placements:** Front, Back
+- **Description:** Heavyweight oversized tee on AS Colour 5080. Crossed-out DISTRACTION on the front, COMFORT KILLS POTENTIAL across the back. Comfort is the enemy of greatness.
+- **Story:** "No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness and peace for those who have been trained by it." — Hebrews 12:11. Comfort is the quiet killer of purpose. Step out of ease and into your calling.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Images:** /images/products/comfort-kills-potential/
+
+### HIS PAIN, OUR GAIN — $60.00 (coming soon)
+- **Tags:** Featured
+- **Blank:** Heavy Oversized Tee | AS Colour 5080
+- **Colors:** Pine Green, Black
+- **Print Placements:** Front (left chest), Back
+- **Description:** Heavyweight oversized tee on AS Colour 5080. UPL1FT mark on the left chest, crown of thorns across the back. A tribute to the sacrifice that set us free.
+- **Story:** "But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." — Isaiah 53:5. His suffering was not in vain. Every wound carried purpose. Wear this truth.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Images:** /images/products/his-pain-our-gain/
+
+### LIVE BY FAITH, NOT BY SIGHT — $60.00 (coming soon)
+- **Tags:** Featured
+- **Blank:** Heavy Oversized Tee | AS Colour 5080
+- **Colors:** Pine Green, Black
+- **Print Placements:** Front
+- **Description:** Heavyweight oversized tee on AS Colour 5080 with a front cross print. Walk by faith, not by what you see.
+- **Story:** "For we walk by faith, not by sight." — 2 Corinthians 5:7. The world shows you one thing. Faith reveals another. This tee is a declaration—you move by conviction, not by circumstance.
+- **Sizes:** S, M, L, XL, 2XL, 3XL
+- **Images:** /images/products/live-by-faith/
 
 **Call to Action:** View All Products → /shop
 
@@ -124,16 +124,16 @@
 
 ## Full Product Catalog
 
-All products are Oversized Faded T-Shirts (AS Colour 5082) in Faded Black. Sizes: S, M, L, XL, 2XL, 3XL.
+All products are AS Colour 5080 heavy oversized tees (boxy fit, dropped shoulders, 100% carded cotton, 8.2 oz / 280 gsm) with a direct-to-garment print, in Pine Green and Black. Sizes: S, M, L, XL, 2XL, 3XL. Free US shipping.
 
 ### Tees
 
-| # | Product | Price | Bestseller | Print Placements |
-|---|---------|-------|------------|------------------|
-| 1 | LIVE BY FAITH, NOT BY SIGHT | $40.00 | Yes | Front, Inside Label |
-| 2 | COMFORT KILLS POTENTIAL | $40.00 | Yes | Front, Back, Inside Label |
-| 3 | HIS PAIN, OUR GAIN | $40.00 | No | Front, Back |
-| 4 | IT IS WRITTEN | $40.00 | Yes | Front, Back, Inside Label |
+| # | Product | Price | Status | Print Placements |
+|---|---------|-------|--------|------------------|
+| 4 | IT IS WRITTEN | $60.00 | Available | Front (left chest), Back |
+| 2 | COMFORT KILLS POTENTIAL | $60.00 | Coming Soon | Front, Back |
+| 3 | HIS PAIN, OUR GAIN | $60.00 | Coming Soon | Front (left chest), Back |
+| 1 | LIVE BY FAITH, NOT BY SIGHT | $60.00 | Coming Soon | Front |
 
 ---
 
@@ -193,6 +193,13 @@ Join the movement. Get updates on new drops and exclusive content.
 - **Framework:** Next.js with static export (`output: 'export'`)
 - **Hosting:** Cloudflare Pages (upl1ft-website.pages.dev → upl1ft.org)
 - **GitHub:** marcustmcgriff/upl1ft-website
-- **Printful Integration:** Manual only — product data is hardcoded in `lib/data/products.ts`
-- **Images:** Stored locally in `public/images/products/` (downloaded from Printful CDN)
-- **To update products:** Edit `lib/data/products.ts`, replace images in `public/images/products/`, rebuild & deploy
+- **Printify Integration:** Site product id to Printify product id lives in `functions/api/_printify.ts`. Prices, colors, sizes and which products can be bought live in two files that must agree: `lib/data/products.ts` (what the site shows) and `functions/api/_catalog.ts` (what checkout accepts). `npm test` fails when they disagree.
+- **Order flow:** Stripe payment -> `functions/api/webhook.ts` saves the order, creates the Printify order and submits it to production (steps in `_order-processing.ts`). Printify -> `functions/api/printify-webhook.ts` updates status and tracking and sends the shipped and arrived emails. `functions/api/stock.ts` feeds live stock to the product page.
+- **Images:** Stored locally in `public/images/products/<product>/` (Printify mockups, five views per color)
+- **To put a Coming Soon product on sale:** in `lib/data/products.ts` set `inStock: true` and remove `comingSoon`; in `functions/api/_catalog.ts` set `live: true`; run `npm test`; deploy.
+- **To update products:** Edit both catalog files, replace images in `public/images/products/`, run `npm test`, rebuild & deploy
+- **Cloudflare settings needed:** `PRINTIFY_API_TOKEN` (expires one year after it is generated in Printify; current one was generated 18 Sep 2026), `PRINTIFY_SHOP_ID`, `PRINTIFY_WEBHOOK_SECRET`, plus the existing Stripe, Supabase and Resend settings. Values are read when the site is deployed: after changing one (`npx wrangler pages secret put NAME --project-name upl1ft-website`), redeploy (Cloudflare Pages, Deployments, Retry deployment, or push a commit)
+- **Stripe settings needed:** the webhook endpoint `https://upl1ft.org/api/webhook` listens to `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed`. The confirmation page asks `functions/api/session-status.ts` whether a checkout was really paid, because Stripe also returns customers after a declined Klarna, Affirm, Cash App Pay or Amazon Pay attempt
+- **Stopping an order that is waiting for Printify:** set its `status` to `cancelled` in Supabase (Table Editor, orders). The site never orders a cancelled row
+- **After making an order by hand in Printify:** put the Printify order id into that order's `printful_order_id` field in Supabase (the column kept its old name), so tracking and the shipped email work
+- **Email:** every email goes through `functions/api/_resend.ts`, which tries a failed send once more

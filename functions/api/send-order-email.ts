@@ -1,3 +1,5 @@
+import { sendEmail } from "./_resend";
+
 interface Env {
   RESEND_API_KEY: string;
   ADMIN_EMAIL?: string;
@@ -62,17 +64,12 @@ function buildEmailHtml(data: OrderEmailData): string {
     data.shippingAddress.line2,
     `${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postal_code}`,
   ]
-    .filter(Boolean)
+    .filter((line): line is string => !!line)
     .map(escapeHtml)
     .join("<br/>");
 
-  const giftHtml = data.giftMessage
-    ? `
-    <div style="background: #1a1a1a; padding: 16px; margin: 20px 0; border-left: 3px solid #C9A227;">
-      <p style="margin: 0 0 4px 0; font-size: 12px; color: #C9A227; text-transform: uppercase; letter-spacing: 1px;">Gift Message</p>
-      <p style="margin: 0; color: #ccc; font-style: italic;">&ldquo;${escapeHtml(data.giftMessage)}&rdquo;</p>
-    </div>`
-    : "";
+  // No gift-message block: the print partner cannot put a note in the parcel, so the
+  // email must not suggest that one is included.
 
   return `
 <!DOCTYPE html>
@@ -123,8 +120,6 @@ function buildEmailHtml(data: OrderEmailData): string {
         </tr>
       </table>
     </div>
-
-    ${giftHtml}
 
     <!-- Shipping -->
     <div style="background: #111; padding: 24px; margin-bottom: 24px;">
@@ -177,34 +172,8 @@ export async function sendOrderConfirmationEmail(
   env: Env,
   data: OrderEmailData
 ): Promise<boolean> {
-  if (!env.RESEND_API_KEY) {
-    console.log("RESEND_API_KEY not configured, skipping order email");
-    return false;
-  }
-
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "UPL1FT <orders@upl1ft.org>",
-        to: [data.to],
-        subject: "Order Confirmed — UPL1FT",
-        html: buildEmailHtml(data),
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Resend email failed:", error);
-      return false;
-    }
-
-    console.log("Order confirmation email sent successfully");
-    return true;
+    return await sendEmail(env, data.to, "Order Confirmed — UPL1FT", buildEmailHtml(data));
   } catch (err: any) {
     console.error("Failed to send order email:", err.message);
     return false;
@@ -216,6 +185,7 @@ export async function sendOrderConfirmationEmail(
 interface AdminOrderEmailData {
   to: string;
   orderItems: {
+    productId?: string;
     name: string;
     size: string;
     color: string;
@@ -235,20 +205,119 @@ interface AdminOrderEmailData {
     postal_code: string;
     country: string;
   };
-  printfulOrderId: string | null;
-  printfulFailed: boolean;
+  fulfillment: AdminFulfillment;
   stripeSessionId: string;
   stripePaymentIntentId: string | null;
   giftMessage?: string;
   discountCode?: string;
 }
 
-function buildAdminEmailHtml(data: AdminOrderEmailData): string {
+// What exists in Printify for this payment. Mirrors FulfillmentReport in _order-processing.ts.
+export interface AdminFulfillment {
+  state: "created" | "partial" | "not_created" | "pending_retry" | "not_configured";
+  printifyOrderId: string | null;
+  adopted: boolean;
+  isRetry: boolean;
+  unavailable: { productId: string; size: string; color: string; quantity: number; reason: string }[];
+  errorDetail: string | null;
+}
+
+interface AdminBanner {
+  ok: boolean;
+  subject: string;
+  headline: string;
+  lines: string[];
+}
+
+// What to do after making an order by hand in Printify, so the site knows about it.
+const AFTER_HAND_ORDER =
+  "After creating it by hand, copy the Printify order id (24 characters, at the end of the order's web address in Printify) into this order's printful_order_id field in Supabase (Table Editor, orders). Tracking and the shipped email then work, and the site treats the payment as ordered. Do not use Resend in Stripe for this payment afterwards.";
+
+function describeFulfillment(f: AdminFulfillment, itemName: (productId: string) => string): AdminBanner {
+  const missing = f.unavailable.map(
+    (u) => `${itemName(u.productId)}, ${u.color} / ${u.size} x ${u.quantity} (${u.reason.replace(/_/g, " ")})`
+  );
+  const id = f.printifyOrderId || "";
+
+  if (f.state === "created") {
+    const lines = [
+      "The site sends it to production by itself, usually within a minute. Nothing to do. You only hear about it again if that fails.",
+    ];
+    if (f.adopted) {
+      lines.push(
+        "Printify already had this order from an earlier attempt, so no second order was made. Open it in Printify and check that it lists every item below. If one is missing, refund that item in Stripe or add it in Printify by hand."
+      );
+    }
+    if (f.isRetry) lines.push("This is the follow-up to an earlier notice about this payment: it has now gone through.");
+    return { ok: true, subject: "New Order — UPL1FT", headline: `Printify order created (ID: ${id})`, lines };
+  }
+
+  if (f.state === "partial") {
+    return {
+      ok: false,
+      subject: "ACTION NEEDED: Partial Printify Order — UPL1FT",
+      headline: `PARTIAL: Printify order ${id} was created without some items`,
+      lines: [
+        ...missing.map((m) => `Not ordered: ${m}`),
+        "The customer paid for everything. Refund the missing items in Stripe, or add them in Printify by hand once they are available.",
+        `Do not create the other items again: they are already in Printify order ${id}.`,
+      ],
+    };
+  }
+
+  if (f.state === "pending_retry") {
+    return {
+      ok: false,
+      subject: "Heads Up: Printify Order Pending — UPL1FT",
+      headline: "WAITING: Printify could not be reached, so nothing has been ordered yet",
+      lines: [
+        "The site tries again automatically each time Stripe re-sends this payment notice, for about three days. You will get a 'Printify order created' email when it goes through.",
+        "Do NOT create this order by hand in Printify while that is running: the site would then place it a second time.",
+        "If the cause is on our side (for example an expired Printify API token), set the new PRINTIFY_API_TOKEN on the Cloudflare Pages project and then redeploy the site: a changed value only reaches the live site with a new deployment (Cloudflare Pages, Deployments, Retry deployment). After that the next retry places the order. To place it at once, open this payment's event in Stripe (Developers, Events) and choose Resend.",
+        "To stop the automatic retry (before refunding the customer, for example), set this order's status to cancelled in Supabase (Table Editor, orders). The site never orders a cancelled row.",
+        `Only if three days pass with no 'created' email: create the order by hand from the details below. ${AFTER_HAND_ORDER}`,
+        ...(f.errorDetail ? [`Printify said: ${f.errorDetail}`] : []),
+      ],
+    };
+  }
+
+  if (f.state === "not_configured") {
+    return {
+      ok: false,
+      subject: "URGENT: Printify Not Configured — UPL1FT",
+      headline: "NOT ORDERED: the Printify API token is missing in Cloudflare",
+      lines: [
+        "Create this order by hand in Printify from the details below. Then add PRINTIFY_API_TOKEN to the Cloudflare Pages project and redeploy the site so the value takes effect.",
+        AFTER_HAND_ORDER,
+      ],
+    };
+  }
+
+  // A color or size Printify does not have at all (as opposed to one that is sold
+  // out) means the checkout was opened before the catalog changed.
+  const notInCatalog = f.unavailable.some((u) => u.reason === "no_such_variant" || u.reason === "unknown_product");
+  return {
+    ok: false,
+    subject: "URGENT: Printify Order Not Created — UPL1FT",
+    headline: "NOT ORDERED: nothing exists in Printify for this payment",
+    lines: [
+      ...missing.map((m) => `Unavailable: ${m}`),
+      ...(f.errorDetail ? [`Printify said: ${f.errorDetail}`] : []),
+      notInCatalog
+        ? "At least one item is not in the Printify catalog, so this checkout was probably opened before the catalog changed. Offer the customer a color that exists and order it by hand in Printify, or refund them in Stripe."
+        : "The site will not try this one again. Create the order by hand in Printify from the details below, or refund the customer in Stripe.",
+      AFTER_HAND_ORDER,
+    ],
+  };
+}
+
+function buildAdminEmailHtml(data: AdminOrderEmailData, banner: AdminBanner): string {
   const itemsHtml = data.orderItems
     .map(
       (item) => `
       <tr>
         <td style="padding: 8px; border: 1px solid #333; color: #fff;">${escapeHtml(item.name)}</td>
+        <td style="padding: 8px; border: 1px solid #333; color: #ccc;">${escapeHtml(item.color)}</td>
         <td style="padding: 8px; border: 1px solid #333; color: #ccc;">${escapeHtml(item.size)}</td>
         <td style="padding: 8px; border: 1px solid #333; color: #ccc; text-align: center;">${item.quantity}</td>
         <td style="padding: 8px; border: 1px solid #333; color: #fff; text-align: right;">${formatCents(item.price * item.quantity)}</td>
@@ -261,22 +330,26 @@ function buildAdminEmailHtml(data: AdminOrderEmailData): string {
     data.shippingAddress.line2,
     `${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postal_code}`,
   ]
-    .filter(Boolean)
+    .filter((line): line is string => !!line)
     .map(escapeHtml)
     .join("<br/>");
 
-  const statusColor = data.printfulFailed ? "#ef4444" : "#4ade80";
-  const statusText = data.printfulFailed
-    ? "FAILED — Manual fulfillment required"
-    : `Created (ID: ${data.printfulOrderId})`;
-  const statusIcon = data.printfulFailed ? "&#9888;" : "&#10003;";
+  const statusColor = banner.ok ? "#4ade80" : "#ef4444";
+  const statusIcon = banner.ok ? "&#10003;" : "&#9888;";
+  const bannerLinesHtml = banner.lines
+    .map(
+      (line) =>
+        `<p style="color: ${banner.ok ? "#9ca3af" : "#f87171"}; margin: 6px 0 0 0; font-size: 13px; line-height: 1.5;">${escapeHtml(line)}</p>`
+    )
+    .join("");
 
   const discountHtml = data.discountCode
     ? `<tr><td style="padding: 4px 8px; color: #999;">Discount Code</td><td style="padding: 4px 8px; color: #4ade80;">${escapeHtml(data.discountCode)} (-${formatCents(data.discountAmount)})</td></tr>`
     : "";
 
+  // Only orders paid from a checkout opened before the gift note was removed carry one.
   const giftHtml = data.giftMessage
-    ? `<tr><td style="padding: 4px 8px; color: #999;">Gift Message</td><td style="padding: 4px 8px; color: #ccc; font-style: italic;">"${escapeHtml(data.giftMessage)}"</td></tr>`
+    ? `<tr><td style="padding: 4px 8px; color: #999;">Gift Note</td><td style="padding: 4px 8px; color: #ccc; font-style: italic;">"${escapeHtml(data.giftMessage)}" (not sent to Printify: the parcel has no note)</td></tr>`
     : "";
 
   return `
@@ -290,13 +363,13 @@ function buildAdminEmailHtml(data: AdminOrderEmailData): string {
       <p style="color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-top: 4px;">Admin Order Notification</p>
     </div>
 
-    <!-- Printful Status Banner -->
-    <div style="background: ${data.printfulFailed ? "#1a0000" : "#001a00"}; border: 1px solid ${statusColor}; padding: 16px; margin-bottom: 24px; text-align: center;">
+    <!-- Fulfillment (Printify) Status Banner -->
+    <div style="background: ${banner.ok ? "#001a00" : "#1a0000"}; border: 1px solid ${statusColor}; padding: 16px; margin-bottom: 24px; text-align: center;">
       <span style="font-size: 24px;">${statusIcon}</span>
       <p style="color: ${statusColor}; font-weight: bold; margin: 8px 0 4px 0; font-size: 16px;">
-        Printful: ${escapeHtml(statusText)}
+        ${escapeHtml(banner.headline)}
       </p>
-      ${data.printfulFailed ? '<p style="color: #f87171; margin: 0; font-size: 13px;">Log into Printful to manually create this order.</p>' : ""}
+      ${bannerLinesHtml}
     </div>
 
     <!-- Order Items -->
@@ -305,6 +378,7 @@ function buildAdminEmailHtml(data: AdminOrderEmailData): string {
       <table style="width: 100%; border-collapse: collapse;">
         <tr style="background: #1a1a1a;">
           <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: left; font-size: 12px;">Product</th>
+          <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: left; font-size: 12px;">Color</th>
           <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: left; font-size: 12px;">Size</th>
           <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: center; font-size: 12px;">Qty</th>
           <th style="padding: 8px; border: 1px solid #333; color: #C9A227; text-align: right; font-size: 12px;">Price</th>
@@ -345,47 +419,16 @@ export async function sendAdminOrderNotification(
   env: Env,
   data: AdminOrderEmailData
 ): Promise<boolean> {
-  console.log("sendAdminOrderNotification called, RESEND_API_KEY present:", !!env.RESEND_API_KEY);
-
-  if (!env.RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured, skipping admin email");
-    return false;
-  }
-
-  const subject = data.printfulFailed
-    ? "URGENT: Printful Order Failed — UPL1FT"
-    : "New Order — UPL1FT";
+  const nameOf = (productId: string) => {
+    const hit = data.orderItems.find((item: any) => item.productId === productId);
+    return hit ? hit.name : `product ${productId}`;
+  };
+  const banner = describeFulfillment(data.fulfillment, nameOf);
 
   try {
-    const emailHtml = buildAdminEmailHtml(data);
-    console.log("Admin email HTML built, length:", emailHtml.length);
-
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "UPL1FT <orders@upl1ft.org>",
-        to: [data.to],
-        subject,
-        html: emailHtml,
-      }),
-    });
-
-    const responseText = await response.text();
-    console.log("Resend admin email response:", response.status);
-
-    if (!response.ok) {
-      console.error("Admin notification email failed:", response.status);
-      return false;
-    }
-
-    console.log("Admin notification email sent successfully");
-    return true;
+    return await sendEmail(env, data.to, banner.subject, buildAdminEmailHtml(data, banner));
   } catch (err: any) {
-    console.error("Failed to send admin email:", err.message, err.stack);
+    console.error("Failed to send admin email:", err.message);
     return false;
   }
 }

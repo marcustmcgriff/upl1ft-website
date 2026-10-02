@@ -26,7 +26,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${product.name} | UPL1FT`,
       description: product.description,
-      images: [{ url: product.images[0], width: 800, height: 1067 }],
+      images: [{ url: product.images[0], width: 1200, height: 1200 }],
       type: "website",
     },
     twitter: {
@@ -49,7 +49,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     "@type": "Product",
     name: product.name,
     description: product.description,
-    image: product.images,
+    // Structured data needs absolute URLs
+    image: product.images.map((image) =>
+      image.startsWith("/") ? `https://upl1ft.org${image}` : image
+    ),
     url: `https://upl1ft.org/shop/${product.slug}`,
     brand: {
       "@type": "Brand",

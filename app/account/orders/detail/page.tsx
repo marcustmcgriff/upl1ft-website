@@ -110,7 +110,7 @@ function OrderDetailContent() {
     loadOrder();
   }, [id, user?.id]);
 
-  // Auto-fetch tracking details from Printful on mount
+  // Auto-fetch tracking details from Printify on mount
   useEffect(() => {
     if (!order || !order.printful_order_id || !session?.access_token) return;
 
@@ -220,6 +220,9 @@ function OrderDetailContent() {
   const address = order.shipping_address as any;
   const purchasedIds = items.map((item: any) => item.productId);
   const hero = statusHero[order.status] || statusHero.confirmed;
+  // An estimate is no use once the order has arrived
+  const showDeliveryEstimate =
+    !!estimatedDelivery && order.status !== "delivered";
   const estRange = order.created_at
     ? estimatedDeliveryRange(order.created_at)
     : null;
@@ -228,6 +231,12 @@ function OrderDetailContent() {
     order.status !== "delivered" &&
     order.status !== "cancelled" &&
     !!estRange;
+  // Carrier tracking page; only https links are made clickable
+  const trackingLink =
+    typeof order.tracking_url === "string" &&
+    order.tracking_url.startsWith("https://")
+      ? order.tracking_url
+      : null;
 
   return (
     <div className="space-y-10">
@@ -316,15 +325,26 @@ function OrderDetailContent() {
                     Tracking Number
                   </p>
                   <div className="flex items-center justify-end gap-1.5">
-                    <p className="text-accent text-sm font-mono">
-                      {order.tracking_number}
-                    </p>
+                    {trackingLink ? (
+                      <a
+                        href={trackingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent text-sm font-mono underline underline-offset-4 hover:text-foreground transition-colors"
+                      >
+                        {order.tracking_number}
+                      </a>
+                    ) : (
+                      <p className="text-accent text-sm font-mono">
+                        {order.tracking_number}
+                      </p>
+                    )}
                     <CopyButton text={order.tracking_number} />
                   </div>
                 </div>
               </div>
 
-              {(shipDate || estimatedDelivery) && (
+              {(shipDate || showDeliveryEstimate) && (
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/[0.04]">
                   {shipDate && (
                     <div>
@@ -339,7 +359,7 @@ function OrderDetailContent() {
                       </div>
                     </div>
                   )}
-                  {estimatedDelivery && (
+                  {showDeliveryEstimate && estimatedDelivery && (
                     <div className="text-right">
                       <p className="text-muted-foreground text-xs mb-1.5 uppercase tracking-wider">
                         Estimated Delivery
@@ -413,7 +433,7 @@ function OrderDetailContent() {
                     {item.name}
                   </p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    {item.size} / {item.color}
+                    {[item.size, item.color].filter(Boolean).join(" / ")}
                     {item.quantity > 1 && ` × ${item.quantity}`}
                   </p>
                 </div>

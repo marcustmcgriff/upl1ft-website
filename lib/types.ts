@@ -7,6 +7,7 @@ export interface Product {
   description: string;
   story: string; // Scripture-inspired narrative
   images: string[];
+  colorImages?: Record<string, string[]>; // per-color image sets shown when a color is selected
   category: 'tees' | 'hoodies' | 'bottoms' | 'accessories';
   tags: string[];
   sizes: string[];
@@ -14,6 +15,7 @@ export interface Product {
   featured: boolean;
   inStock: boolean;
   bestseller?: boolean;
+  comingSoon?: boolean;
   membersOnly?: boolean;
   earlyAccessUntil?: string; // ISO date string — visible only to members before this date
 }

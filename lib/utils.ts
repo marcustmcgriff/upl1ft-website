@@ -1,8 +1,19 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { Product } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+// Photo for a cart line: the first picture of the color that was chosen.
+export function cartItemImage(product: Product, color: string): string {
+  return product.colorImages?.[color]?.[0] ?? product.images[0];
+}
+
+// Can be bought right now (not "Coming Soon", not out of stock).
+export function isPurchasable(product: Product): boolean {
+  return product.inStock && !product.comingSoon;
 }
 
 export function formatPrice(price: number): string {
@@ -29,8 +40,8 @@ function addBusinessDays(date: Date, days: number): Date {
 }
 
 // Approximate delivery window (5–10 business days from order date), shown to
-// customers before Printful provides an exact post-ship estimate. Matches the
-// range used in the confirmation email and checkout success page.
+// customers before Printify provides an exact post-ship estimate. The checkout
+// success page shows the same range.
 export function estimatedDeliveryRange(createdAt: string | Date): string | null {
   if (!createdAt) return null;
   const start = new Date(createdAt);

@@ -52,8 +52,11 @@ export function OrderTimeline({
   return (
     <div className="py-2">
       {steps.map((step, index) => {
-        const isCompleted = index < currentIndex;
-        const isCurrent = index === currentIndex;
+        // "Delivered" is the last step: once reached it is done, not in progress
+        const isCompleted =
+          index < currentIndex ||
+          (status === "delivered" && step.key === "delivered");
+        const isCurrent = index === currentIndex && !isCompleted;
         const isLast = index === steps.length - 1;
         const StepIcon = step.icon;
 

@@ -4,11 +4,12 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Product } from "@/lib/types";
-import { formatPrice, calculateDiscount } from "@/lib/utils";
+import { formatPrice, calculateDiscount, isPurchasable } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { trackAddToCart } from "@/lib/analytics";
 
 interface ProductCardProps {
   product: Product;
@@ -29,10 +30,27 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
     ? calculateDiscount(product.price, product.compareAtPrice)
     : 0;
   const hasMultipleImages = product.images.length > 1;
+  const purchasable = isPurchasable(product);
+  // More than one color: color and size are chosen on the product page, where
+  // sold-out sizes are shown. Quick add is only for single-color products.
+  const chooseOptions = !isMembersOnly && purchasable && product.colors.length > 1;
+  const sizeRange =
+    product.sizes.length > 1
+      ? `${product.sizes[0]}–${product.sizes[product.sizes.length - 1]}`
+      : product.sizes[0];
+  // Button label while quick add is not possible (null = ready to add)
+  const quickAddBlocked = !purchasable
+    ? "Out of Stock"
+    : justAdded
+    ? "Added!"
+    : !selectedSize
+    ? "Select a size"
+    : null;
 
   const handleQuickAdd = () => {
-    const size = selectedSize || product.sizes[0];
-    addItem(product, size, product.colors[0]);
+    if (!purchasable || !selectedSize) return;
+    addItem(product, selectedSize, product.colors[0]);
+    trackAddToCart(product.name, product.id, product.price);
     openDrawer();
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1500);
@@ -90,19 +108,22 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
 
           {/* Badges */}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
+            {product.comingSoon && (
+              <Badge variant="default" className="bg-accent text-accent-foreground">Coming Soon</Badge>
+            )}
             {product.membersOnly && (
               <Badge variant="default" className="bg-accent text-accent-foreground">Members Only</Badge>
             )}
             {isEarlyAccess && !product.membersOnly && (
               <Badge variant="default" className="bg-accent text-accent-foreground">Early Access</Badge>
             )}
-            {product.bestseller && (
+            {product.bestseller && !product.comingSoon && (
               <Badge variant="default">Bestseller</Badge>
             )}
             {discount > 0 && (
               <Badge variant="destructive">-{discount}%</Badge>
             )}
-            {product.featured && !product.bestseller && (
+            {product.featured && !product.bestseller && !product.comingSoon && (
               <Badge variant="outline">Featured</Badge>
             )}
           </div>
@@ -133,7 +154,10 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               iOS double-tap-to-click and intercepts taps while invisible) */}
           <div
             className="absolute bottom-4 left-4 right-4 hidden md:block opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-300"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => {
+              // "Choose Options" lets the click through to the product link around it
+              if (!chooseOptions) e.preventDefault();
+            }}
           >
             {isMembersOnly ? (
               <Link href="/signup" onClick={(e) => e.stopPropagation()}>
@@ -141,6 +165,20 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                   Join to Unlock
                 </Button>
               </Link>
+            ) : product.comingSoon ? (
+              <Button
+                className="w-full"
+                size="sm"
+                variant="outline"
+                disabled
+                onClick={(e) => e.preventDefault()}
+              >
+                Coming Soon
+              </Button>
+            ) : chooseOptions ? (
+              <Button className="w-full" size="sm">
+                Choose Options
+              </Button>
             ) : (
               <Button
                 className="w-full"
@@ -149,9 +187,9 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                   e.preventDefault();
                   handleQuickAdd();
                 }}
-                disabled={justAdded}
+                disabled={quickAddBlocked !== null}
               >
-                {justAdded ? "Added!" : selectedSize ? `Quick Add — ${selectedSize}` : "Quick Add"}
+                {quickAddBlocked ?? `Quick Add — ${selectedSize}`}
               </Button>
             )}
           </div>
@@ -176,22 +214,29 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           )}
         </div>
 
-        {/* Selectable Sizes */}
-        <div className="flex gap-1 flex-wrap">
-          {product.sizes.slice(0, 5).map((size) => (
-            <button
-              key={size}
-              onClick={() => setSelectedSize(size)}
-              className={`text-xs border px-2 py-0.5 transition-colors cursor-pointer ${
-                selectedSize === size
-                  ? "border-accent text-accent-foreground bg-accent font-semibold"
-                  : "border-accent/60 bg-black/70 text-foreground hover:border-accent hover:text-accent"
-              }`}
-            >
-              {size}
-            </button>
-          ))}
-        </div>
+        {/* Selectable Sizes (a short summary when sizes are chosen on the product page,
+            or cannot be chosen yet) */}
+        {chooseOptions || product.comingSoon ? (
+          <p className="text-xs text-muted-foreground">
+            {product.colors.length} colors &middot; {sizeRange}
+          </p>
+        ) : (
+          <div className="flex gap-1 flex-wrap">
+            {product.sizes.slice(0, 5).map((size) => (
+              <button
+                key={size}
+                onClick={() => setSelectedSize(size)}
+                className={`text-xs border px-2 py-0.5 transition-colors cursor-pointer ${
+                  selectedSize === size
+                    ? "border-accent text-accent-foreground bg-accent font-semibold"
+                    : "border-accent/60 bg-black/70 text-foreground hover:border-accent hover:text-accent"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Mobile Quick Add - Always visible on mobile */}
         {isMembersOnly ? (
@@ -200,14 +245,24 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               Join to Unlock
             </Button>
           </Link>
+        ) : product.comingSoon ? (
+          <Button className="w-full md:hidden" size="sm" variant="outline" disabled>
+            Coming Soon
+          </Button>
+        ) : chooseOptions ? (
+          <Link href={`/shop/${product.slug}`}>
+            <Button className="w-full md:hidden" size="sm">
+              Choose Options
+            </Button>
+          </Link>
         ) : (
           <Button
             className="w-full md:hidden"
             size="sm"
             onClick={handleQuickAdd}
-            disabled={justAdded}
+            disabled={quickAddBlocked !== null}
           >
-            {justAdded ? "Added!" : selectedSize ? `Add to Cart — ${selectedSize}` : "Add to Cart"}
+            {quickAddBlocked ?? `Add to Cart — ${selectedSize}`}
           </Button>
         )}
       </div>

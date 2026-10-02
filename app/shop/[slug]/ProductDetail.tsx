@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatPrice, calculateDiscount } from "@/lib/utils";
+import { formatPrice, calculateDiscount, isPurchasable } from "@/lib/utils";
 import { ShoppingBag, ChevronLeft, ChevronRight, Check, Lock } from "lucide-react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { trackAddToCart } from "@/lib/analytics";
+
+// Answer of /api/stock: color -> size -> can be ordered. null = stock unknown.
+type Stock = Record<string, Record<string, boolean>> | null;
+
+// With a stock answer for the color, only sizes marked true can be ordered.
+// Without one (stock unknown) nothing is sold out; checkout does the final check.
+function soldOut(stock: Stock, color: string, size: string): boolean {
+  const byColor = stock?.[color];
+  if (!byColor) return false;
+  return byColor[size] !== true;
+}
 
 export function ProductDetail({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState<string>("");
@@ -24,15 +35,56 @@ export function ProductDetail({ product }: { product: Product }) {
   const { addItem, openDrawer } = useCart();
   const { user } = useAuth();
   const isMembersOnly = product.membersOnly && !user;
-  const hasMultipleImages = product.images.length > 1;
+  const purchasable = isPurchasable(product);
+
+  // Images shown for the currently-selected color (falls back to the default set)
+  const displayImages = product.colorImages?.[selectedColor] ?? product.images;
+  const hasMultipleImages = displayImages.length > 1;
 
   const discount = product.compareAtPrice
     ? calculateDiscount(product.price, product.compareAtPrice)
     : 0;
 
+  // Live per-color/size availability from Printify (null = unknown, keep everything enabled)
+  const [stock, setStock] = useState<Stock>(null);
+  useEffect(() => {
+    if (!purchasable) return; // nothing to order yet, so nothing to check
+    let cancelled = false;
+    fetch(`/api/stock?product=${product.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.colors) setStock(data.colors);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id, purchasable]);
+
+  const isSoldOut = (size: string) => soldOut(stock, selectedColor, size);
+
+  // Drop a chosen size that turns out to be sold out (e.g. picked before the
+  // stock answer arrived)
+  useEffect(() => {
+    if (selectedSize && soldOut(stock, selectedColor, selectedSize)) {
+      setSelectedSize("");
+    }
+  }, [stock, selectedColor, selectedSize]);
+
+  const selectColor = (color: string) => {
+    setSelectedColor(color);
+    setSelectedImage(0); // reset to the first photo of the newly-selected color
+    if (selectedSize && soldOut(stock, color, selectedSize)) setSelectedSize("");
+  };
+
   const handleAddToCart = () => {
+    if (!purchasable) return;
     if (!selectedSize) {
       alert("Please select a size");
+      return;
+    }
+    if (isSoldOut(selectedSize)) {
+      setSelectedSize("");
       return;
     }
     addItem(product, selectedSize, selectedColor);
@@ -63,7 +115,7 @@ export function ProductDetail({ product }: { product: Product }) {
               if (touchStart === null || !hasMultipleImages) return;
               const diff = touchStart - e.changedTouches[0].clientX;
               if (Math.abs(diff) > 50) {
-                if (diff > 0 && selectedImage < product.images.length - 1) {
+                if (diff > 0 && selectedImage < displayImages.length - 1) {
                   setSelectedImage(selectedImage + 1);
                 } else if (diff < 0 && selectedImage > 0) {
                   setSelectedImage(selectedImage - 1);
@@ -73,8 +125,8 @@ export function ProductDetail({ product }: { product: Product }) {
             }}
           >
             <Image
-              src={product.images[selectedImage]}
-              alt={product.name}
+              src={displayImages[selectedImage]}
+              alt={`${product.name} — ${selectedColor}`}
               fill
               className="object-cover"
               priority
@@ -97,7 +149,7 @@ export function ProductDetail({ product }: { product: Product }) {
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                 )}
-                {selectedImage < product.images.length - 1 && (
+                {selectedImage < displayImages.length - 1 && (
                   <button
                     onClick={() => setSelectedImage(selectedImage + 1)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 transition-colors z-10"
@@ -109,7 +161,7 @@ export function ProductDetail({ product }: { product: Product }) {
 
                 {/* Dot Indicators */}
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                  {product.images.map((_, index) => (
+                  {displayImages.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
@@ -126,9 +178,9 @@ export function ProductDetail({ product }: { product: Product }) {
             )}
           </div>
 
-          {product.images.length > 1 && (
+          {displayImages.length > 1 && (
             <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image, index) => (
+              {displayImages.map((image, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedImage(index)}
@@ -178,7 +230,7 @@ export function ProductDetail({ product }: { product: Product }) {
                 {product.colors.map((color) => (
                   <button
                     key={color}
-                    onClick={() => setSelectedColor(color)}
+                    onClick={() => selectColor(color)}
                     className={`px-4 py-2 border ${
                       selectedColor === color
                         ? "border-accent bg-accent/10"
@@ -192,26 +244,42 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
-          <div>
-            <label className="block text-sm uppercase tracking-wider text-foreground mb-2">
-              Size: {selectedSize && <span className="text-accent">{selectedSize}</span>}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {product.sizes.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`px-4 py-2 border ${
-                    selectedSize === size
-                      ? "border-accent text-accent-foreground bg-accent font-semibold"
-                      : "border-accent/50 hover:border-accent"
-                  } transition-colors text-sm`}
-                >
-                  {size}
-                </button>
-              ))}
+          {/* Coming Soon products have no sizes to pick yet */}
+          {!product.comingSoon && (
+            <div>
+              <label className="block text-sm uppercase tracking-wider text-foreground mb-2">
+                Size: {selectedSize && <span className="text-accent">{selectedSize}</span>}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {product.sizes.map((size) => {
+                  const sizeSoldOut = isSoldOut(size);
+                  return (
+                    <button
+                      key={size}
+                      onClick={() => !sizeSoldOut && setSelectedSize(size)}
+                      disabled={sizeSoldOut}
+                      aria-disabled={sizeSoldOut}
+                      title={sizeSoldOut ? "Sold out in this color" : undefined}
+                      className={`px-4 py-2 border transition-colors text-sm ${
+                        sizeSoldOut
+                          ? "border-border text-muted-foreground line-through opacity-50 cursor-not-allowed"
+                          : selectedSize === size
+                          ? "border-accent text-accent-foreground bg-accent font-semibold"
+                          : "border-accent/50 hover:border-accent"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
+              </div>
+              {product.sizes.some((s) => isSoldOut(s)) && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Crossed-out sizes are temporarily sold out in {selectedColor}.
+                </p>
+              )}
             </div>
-          </div>
+          )}
 
           {isMembersOnly ? (
             <div className="space-y-3">
@@ -235,7 +303,7 @@ export function ProductDetail({ product }: { product: Product }) {
               size="lg"
               className="w-full"
               onClick={handleAddToCart}
-              disabled={!product.inStock || added}
+              disabled={!purchasable || added}
             >
               {added ? (
                 <>
@@ -245,7 +313,11 @@ export function ProductDetail({ product }: { product: Product }) {
               ) : (
                 <>
                   <ShoppingBag className="mr-2 h-5 w-5" />
-                  {product.inStock ? "Add to Cart" : "Out of Stock"}
+                  {purchasable
+                    ? "Add to Cart"
+                    : product.comingSoon
+                    ? "Coming Soon"
+                    : "Out of Stock"}
                 </>
               )}
             </Button>
@@ -270,11 +342,14 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
           )}
 
-          <div className="border-t border-border pt-6 space-y-4 text-sm text-muted-foreground">
-            <p>• Free shipping on all orders</p>
-            <p>• Ships within 5-10 business days</p>
-            <p>• US shipping only</p>
-          </div>
+          {/* Shipping promises only apply to products that can be ordered */}
+          {!product.comingSoon && (
+            <div className="border-t border-border pt-6 space-y-4 text-sm text-muted-foreground">
+              <p>• Free shipping on all orders</p>
+              <p>• Made to order. Arrives in 5-10 business days</p>
+              <p>• US shipping only</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

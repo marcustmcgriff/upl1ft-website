@@ -22,6 +22,8 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
+  // Makes relative image paths in page metadata (og:image, twitter:image) absolute
+  metadataBase: new URL("https://upl1ft.org"),
   title: "UPL1FT | Faith-Based Streetwear",
   description:
     "Premium streetwear for the battle-hardened believer. Strength, discipline, and faith woven into every piece.",

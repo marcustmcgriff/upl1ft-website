@@ -339,6 +339,9 @@ function GuestTrackingContent() {
   // ─── Full tracking detail view ───
   const purchasedIds = order.items.map((item) => item.productId);
   const hero = statusHero[order.status] || statusHero.confirmed;
+  // An estimate is no use once the order has arrived
+  const showDeliveryEstimate =
+    !!order.estimated_delivery && order.status !== "delivered";
   const estRange = order.created_at
     ? estimatedDeliveryRange(order.created_at)
     : null;
@@ -347,6 +350,12 @@ function GuestTrackingContent() {
     order.status !== "delivered" &&
     order.status !== "cancelled" &&
     !!estRange;
+  // Carrier tracking page; only https links are made clickable
+  const trackingLink =
+    typeof order.tracking_url === "string" &&
+    order.tracking_url.startsWith("https://")
+      ? order.tracking_url
+      : null;
 
   return (
     <div className="max-w-2xl mx-auto space-y-10">
@@ -426,15 +435,26 @@ function GuestTrackingContent() {
                   Tracking Number
                 </p>
                 <div className="flex items-center justify-end gap-1.5">
-                  <p className="text-accent text-sm font-mono">
-                    {order.tracking_number}
-                  </p>
+                  {trackingLink ? (
+                    <a
+                      href={trackingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent text-sm font-mono underline underline-offset-4 hover:text-foreground transition-colors"
+                    >
+                      {order.tracking_number}
+                    </a>
+                  ) : (
+                    <p className="text-accent text-sm font-mono">
+                      {order.tracking_number}
+                    </p>
+                  )}
                   <CopyButton text={order.tracking_number} />
                 </div>
               </div>
             </div>
 
-            {(order.ship_date || order.estimated_delivery) && (
+            {(order.ship_date || showDeliveryEstimate) && (
               <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/[0.04]">
                 {order.ship_date && (
                   <div>
@@ -449,7 +469,7 @@ function GuestTrackingContent() {
                     </div>
                   </div>
                 )}
-                {order.estimated_delivery && (
+                {showDeliveryEstimate && order.estimated_delivery && (
                   <div className="text-right">
                     <p className="text-muted-foreground text-xs mb-1.5 uppercase tracking-wider">
                       Estimated Delivery
@@ -519,7 +539,7 @@ function GuestTrackingContent() {
                     {item.name}
                   </p>
                   <p className="text-muted-foreground text-xs mt-1">
-                    {item.size} / {item.color}
+                    {[item.size, item.color].filter(Boolean).join(" / ")}
                     {item.quantity > 1 && ` × ${item.quantity}`}
                   </p>
                 </div>

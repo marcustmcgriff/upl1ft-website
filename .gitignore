@@ -58,3 +58,9 @@ start-dev.bat
 wrangler.toml
 .wrangler/
 supabase-v2-keys.local.txt
+.mcp.json
+printify-keys.local.txt
+# Any other local key or env file
+*.local.txt
+.env*
+!.env.example

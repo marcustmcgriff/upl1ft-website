@@ -1,13 +1,23 @@
 import { createClient } from "@supabase/supabase-js";
+import { createOrder, isPrintifyOrderId, resolveLineItems, sendToProductionWhenReady } from "./_printify";
+
+// Admin-only repair tool for an order whose Printify side did not go through.
+//   - The order has no Printify order yet: create it (the Stripe session id is the
+//     external id, so if Printify already has one for this payment it is reused).
+//   - The order already has one: make sure it has been sent to production.
+// The route keeps its old name (/api/retry-printful-order) so existing admin tooling
+// keeps working.
+//
+// POST { orderId: "<orders.id>", allowPartial?: boolean }
+//   allowPartial: order the available lines even if others are sold out.
 
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
-  PRINTFUL_API_TOKEN: string;
+  PRINTIFY_API_TOKEN: string;
+  PRINTIFY_SHOP_ID?: string;
   ADMIN_EMAIL: string;
 }
-
-const PRINTFUL_STORE_ID = "17677297";
 
 function getCorsHeaders(request: Request) {
   const origin = request.headers.get("Origin") || "";
@@ -23,27 +33,20 @@ export const onRequestOptions: PagesFunction<Env> = async (context) => {
   return new Response(null, { headers: getCorsHeaders(context.request) });
 };
 
-// Mapping of product ID + size to Printful sync variant ID
-const VARIANT_MAP: Record<string, Record<string, number>> = {
-  "1": { "S": 5187387218, "M": 5187387219, "L": 5187387220, "XL": 5187387221, "2XL": 5187387222, "3XL": 5187387223 },
-  "2": { "S": 5187387226, "M": 5187387227, "L": 5187387228, "XL": 5187387229, "2XL": 5187387230, "3XL": 5187387231 },
-  "3": { "S": 5187387212, "M": 5187387213, "L": 5187387214, "XL": 5187387215, "2XL": 5187387216, "3XL": 5187387217 },
-  "4": { "S": 5187387240, "M": 5187387241, "L": 5187387242, "XL": 5187387243, "2XL": 5187387244, "3XL": 5187387245 },
-};
-
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, PRINTFUL_API_TOKEN } =
-    context.env;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = context.env;
 
   const corsHeaders = getCorsHeaders(context.request);
-
-  // Simple admin auth via Supabase service role — only callable with the service role key
-  const authHeader = context.request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
+
+  // Only the signed-in admin may call this.
+  const authHeader = context.request.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return json({ error: "Unauthorized" }, 401);
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -53,32 +56,25 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   } = await supabase.auth.getUser(token);
 
   if (!user) {
-    return new Response(JSON.stringify({ error: "Invalid token" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return json({ error: "Invalid token" }, 401);
   }
 
-  // Verify the user is an admin
   const adminEmail = context.env.ADMIN_EMAIL;
   if (!adminEmail || user.email !== adminEmail) {
-    return new Response(JSON.stringify({ error: "Admin access required" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return json({ error: "Admin access required" }, 403);
+  }
+
+  if (!context.env.PRINTIFY_API_TOKEN) {
+    return json({ error: "Printify not configured" }, 500);
   }
 
   try {
-    const { orderId } = (await context.request.json()) as { orderId: string };
-
+    const body = (await context.request.json()) as { orderId?: string; allowPartial?: boolean };
+    const orderId = body.orderId;
     if (!orderId) {
-      return new Response(JSON.stringify({ error: "Order ID required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return json({ error: "Order ID required" }, 400);
     }
 
-    // Fetch order from Supabase
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .select("*")
@@ -86,129 +82,135 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       .single();
 
     if (orderError || !order) {
-      return new Response(JSON.stringify({ error: "Order not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+      return json({ error: "Order not found" }, 404);
+    }
+    if (order.status === "cancelled") {
+      return json({ error: "This order is cancelled. Nothing was sent to Printify." }, 409);
+    }
+
+    const markProcessing = async () => {
+      await supabase
+        .from("orders")
+        .update({ status: "processing", updated_at: new Date().toISOString() })
+        .eq("id", orderId)
+        .eq("status", "confirmed");
+    };
+
+    // ---- Already linked: make sure it is in production ----
+    if (order.printful_order_id) {
+      if (!isPrintifyOrderId(order.printful_order_id)) {
+        return json(
+          { error: "This order was fulfilled by the previous supplier and cannot be retried.", printful_order_id: order.printful_order_id },
+          400
+        );
+      }
+      const submitted = await sendToProductionWhenReady(context.env, order.printful_order_id, 12000);
+      if (submitted.state === "sent" || submitted.state === "already_sent") await markProcessing();
+      return json({
+        success: submitted.state === "sent" || submitted.state === "already_sent",
+        printful_order_id: order.printful_order_id,
+        production: submitted.state,
+        printify_status: submitted.printifyStatus,
+        detail: submitted.detail,
       });
     }
 
-    if (order.printful_order_id) {
-      return new Response(
-        JSON.stringify({
-          error: "Order already has a Printful order",
-          printful_order_id: order.printful_order_id,
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    // Build Printful order from saved data
-    const items = (order.items as any[]) || [];
-    const printfulItems = items
-      .map((item: any) => {
-        const variantId = VARIANT_MAP[item.productId]?.[item.size];
-        if (!variantId) {
-          console.error(
-            `No variant ID for product ${item.productId} size ${item.size}`
-          );
-          return null;
-        }
-        return { sync_variant_id: variantId, quantity: item.quantity };
-      })
-      .filter(Boolean);
-
-    if (printfulItems.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No valid items to send to Printful" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-
-    const shippingAddr = order.shipping_address as any;
-    const printfulOrder: Record<string, unknown> = {
-      recipient: {
-        name: order.shipping_name || "Customer",
-        address1: shippingAddr?.line1 || "",
-        address2: shippingAddr?.line2 || "",
-        city: shippingAddr?.city || "",
-        state_code: shippingAddr?.state || "",
-        country_code: shippingAddr?.country || "US",
-        zip: shippingAddr?.postal_code || "",
-        email: order.customer_email || "",
-      },
-      items: printfulItems,
-      packing_slip: {
-        email: "support@upl1ft.org",
-        message: order.gift_message || "Thank you for your order. Rise Above. Walk In Purpose. — UPL1FT",
-      },
-      ...(order.gift_message
-        ? { gift: { subject: "UPL1FT", message: order.gift_message } }
-        : {}),
-    };
-
-    // Create and confirm order in Printful
-    const printfulResponse = await fetch(
-      "https://api.printful.com/orders?confirm=true",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${PRINTFUL_API_TOKEN}`,
-          "Content-Type": "application/json",
-          "X-PF-Store-Id": PRINTFUL_STORE_ID,
-        },
-        body: JSON.stringify(printfulOrder),
-      }
+    // ---- Not linked: create (or find) the Printify order ----
+    const items = Array.isArray(order.items) ? (order.items as any[]) : [];
+    const resolved = await resolveLineItems(
+      context.env,
+      items.map((item: any) => ({
+        productId: String(item.productId),
+        size: String(item.size),
+        color: String(item.color),
+        quantity: Number(item.quantity) || 1,
+      }))
     );
 
-    const printfulResult = await printfulResponse.json();
-
-    if (!printfulResponse.ok) {
-      console.error("Printful retry failed:", printfulResult);
-      return new Response(
-        JSON.stringify({
-          error: "Printful order creation failed",
-          details: printfulResult,
-        }),
+    if (resolved.unknown.length > 0) {
+      return json({ error: "Printify could not be reached. Try again in a few minutes.", detail: resolved.unknownDetail }, 503);
+    }
+    if (resolved.lineItems.length === 0) {
+      return json({ error: "None of the items can be ordered right now.", unavailable: resolved.unavailable }, 409);
+    }
+    if (resolved.unavailable.length > 0 && !body.allowPartial) {
+      return json(
         {
-          status: 502,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+          error: "Some items cannot be ordered right now. Send allowPartial: true to order the rest.",
+          unavailable: resolved.unavailable,
+        },
+        409
       );
     }
 
-    const printfulOrderId =
-      printfulResult?.result?.id?.toString() || null;
+    const shippingAddr = (order.shipping_address || {}) as any;
+    const created = await createOrder(context.env, {
+      // Same external id as the payment handler, so Printify returns the existing
+      // order instead of making a second one if it already has it.
+      externalId: order.stripe_session_id || `order-${order.id}`,
+      label: `UPL1FT ${String(order.stripe_session_id || order.id).slice(-8)}`,
+      lineItems: resolved.lineItems,
+      address: {
+        name: order.shipping_name || "Customer",
+        email: order.customer_email || "",
+        line1: shippingAddr.line1 || "",
+        line2: shippingAddr.line2 || "",
+        city: shippingAddr.city || "",
+        state: shippingAddr.state || "",
+        postal_code: shippingAddr.postal_code || "",
+        country: shippingAddr.country || "US",
+      },
+    });
 
-    // Update Supabase with the new Printful order ID
-    await supabase
+    if (!created.id) {
+      return json({ error: "Printify order creation failed", detail: created.error }, created.transient ? 503 : 502);
+    }
+
+    // Link it only if nobody else has in the meantime.
+    const { error: linkError } = await supabase
       .from("orders")
-      .update({ printful_order_id: printfulOrderId })
-      .eq("id", orderId);
+      .update({ printful_order_id: created.id, updated_at: new Date().toISOString() })
+      .eq("id", orderId)
+      .is("printful_order_id", null);
+    if (linkError) {
+      return json(
+        { error: "The Printify order exists but could not be saved on the site order. Run this again.", printful_order_id: created.id },
+        500
+      );
+    }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        printful_order_id: printfulOrderId,
-        message: "Printful order created and confirmed",
-      }),
+    const submitted = await sendToProductionWhenReady(context.env, created.id);
+    const inProduction = submitted.state === "sent" || submitted.state === "already_sent";
+    const waiting = submitted.state === "not_ready";
+    if (inProduction) await markProcessing();
+
+    let message: string;
+    if (inProduction) {
+      message = "Printify order is in production";
+    } else if (waiting) {
+      message = "Printify order exists. It goes to production once Printify finishes preparing it (run this again in a minute to check).";
+    } else if (submitted.state === "error") {
+      message = "Printify order exists, but Printify could not be reached to send it to production. Run this again in a minute.";
+    } else {
+      // blocked or refused: cancelled in Printify, a payment problem, or a refusal.
+      message = `Printify order ${created.id} exists but cannot go to production${submitted.detail ? ` (${submitted.detail})` : ""}. Open it in Printify. If it is cancelled there, a new order for this payment has to be made by hand in Printify.`;
+    }
+
+    return json(
       {
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+        success: inProduction || waiting,
+        printful_order_id: created.id,
+        reused_existing_order: created.adopted,
+        production: submitted.state,
+        printify_status: submitted.printifyStatus,
+        detail: submitted.detail,
+        not_ordered: resolved.unavailable,
+        message,
+      },
+      inProduction || waiting ? 200 : submitted.state === "error" ? 503 : 409
     );
   } catch (err: any) {
-    console.error("Retry Printful order error:", err);
-    return new Response(
-      JSON.stringify({ error: "Failed to retry Printful order" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    console.error("Retry Printify order error:", err?.message || String(err));
+    return json({ error: "Internal error" }, 500);
   }
 };

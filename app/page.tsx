@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "UPL1FT | Faith-Based Streetwear - Carry Your Cross",
   description:
-    "Premium heavyweight streetwear for those who walk the narrow path. Shop tees, hoodies, and accessories built with purpose. Strength. Discipline. Faith.",
+    "Premium heavyweight streetwear for those who walk the narrow path. Shop heavyweight tees built with purpose. Strength. Discipline. Faith.",
 };
 
 export default function HomePage() {
@@ -19,7 +19,7 @@ export default function HomePage() {
         "@id": "https://upl1ft.org/#organization",
         name: "UPL1FT",
         url: "https://upl1ft.org",
-        logo: "https://upl1ft.org/images/logo.png",
+        logo: "https://upl1ft.org/images/upl1ft-logo.png",
         description:
           "Premium heavyweight streetwear for those who walk the narrow path. Strength. Discipline. Faith.",
         sameAs: ["https://instagram.com/upl1ft.co"],

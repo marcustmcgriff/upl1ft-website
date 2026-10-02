@@ -5,11 +5,15 @@ import Image from "next/image";
 import { X, ShoppingBag, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "./CartProvider";
+import { cartItemImage } from "@/lib/utils";
 
 export function CartToast() {
   const { toast, setToast } = useCart();
 
   if (!toast) return null;
+
+  // The color that was added (first color when the caller did not say)
+  const color = toast.color ?? toast.product.colors[0];
 
   return (
     <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
@@ -32,7 +36,7 @@ export function CartToast() {
         <div className="flex items-center gap-4 p-4">
           <div className="relative w-16 h-20 bg-muted overflow-hidden rounded flex-shrink-0">
             <Image
-              src={toast.product.images[0]}
+              src={cartItemImage(toast.product, color)}
               alt={toast.product.name}
               fill
               className="object-cover"
@@ -44,7 +48,7 @@ export function CartToast() {
               {toast.product.name}
             </p>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Size: {toast.size} &middot; {toast.product.colors[0]}
+              Size: {toast.size} &middot; {color}
             </p>
             <p className="text-sm font-semibold text-accent mt-0.5">
               ${toast.product.price.toFixed(2)}

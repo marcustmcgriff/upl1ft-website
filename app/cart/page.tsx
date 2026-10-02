@@ -12,13 +12,12 @@ import {
   Plus,
   X,
   Tag,
-  Gift,
   Lock,
   UserPlus,
 } from "lucide-react";
-import { useCart } from "@/components/cart/CartProvider";
+import { useCart, MAX_QTY_PER_LINE } from "@/components/cart/CartProvider";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, cartItemImage } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, cartTotal, removeItem, updateQuantity } = useCart();
@@ -33,10 +32,6 @@ export default function CartPage() {
   } | null>(null);
   const [discountError, setDiscountError] = useState("");
   const [discountLoading, setDiscountLoading] = useState(false);
-
-  // Gift message state
-  const [giftMessage, setGiftMessage] = useState("");
-  const [showGiftMessage, setShowGiftMessage] = useState(false);
 
   const subtotalCents = Math.round(cartTotal * 100);
   const discountAmountCents = appliedDiscount?.discount_amount || 0;
@@ -84,7 +79,6 @@ export default function CartPage() {
         "upl1ft-checkout-opts",
         JSON.stringify({
           discountCode: appliedDiscount?.code || undefined,
-          giftMessage: giftMessage.trim() || undefined,
         })
       );
     } catch {
@@ -129,7 +123,7 @@ export default function CartPage() {
               {/* Product Image */}
               <div className="relative w-24 h-32 flex-shrink-0 bg-background overflow-hidden">
                 <Image
-                  src={item.product.images[0]}
+                  src={cartItemImage(item.product, item.color)}
                   alt={item.product.name}
                   fill
                   className="object-cover"
@@ -173,7 +167,8 @@ export default function CartPage() {
                     </span>
                     <button
                       onClick={() => updateQuantity(index, item.quantity + 1)}
-                      className="p-2 hover:bg-background transition-colors"
+                      disabled={item.quantity >= MAX_QTY_PER_LINE}
+                      className="p-2 hover:bg-background transition-colors disabled:opacity-50"
                       aria-label="Increase quantity"
                     >
                       <Plus className="h-3 w-3" />
@@ -188,35 +183,6 @@ export default function CartPage() {
               </div>
             </div>
           ))}
-
-          {/* Gift Message */}
-          <div className="bg-muted p-4">
-            <button
-              onClick={() => setShowGiftMessage(!showGiftMessage)}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer w-full"
-            >
-              <Gift className="h-4 w-4" />
-              <span>
-                {showGiftMessage
-                  ? "Remove gift message"
-                  : "Add a gift message (free)"}
-              </span>
-            </button>
-            {showGiftMessage && (
-              <div className="mt-3">
-                <textarea
-                  placeholder="Write a personal message to include with this order..."
-                  value={giftMessage}
-                  onChange={(e) => setGiftMessage(e.target.value.slice(0, 200))}
-                  rows={3}
-                  className="w-full bg-background border border-border p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-                <p className="text-xs text-muted-foreground mt-1 text-right">
-                  {giftMessage.length}/200
-                </p>
-              </div>
-            )}
-          </div>
 
           {/* Member nudge for guests */}
           {!user && (
