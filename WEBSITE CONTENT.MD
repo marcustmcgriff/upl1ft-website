@@ -68,8 +68,8 @@
 - **Tags:** Featured
 - **Blank:** Heavy Oversized Tee | AS Colour 5080
 - **Colors:** Pine Green, Black
-- **Print Placements:** Front (left chest), Back
-- **Description:** Heavyweight oversized tee on AS Colour 5080. UPL1FT mark on the left chest, crown of thorns across the back. A tribute to the sacrifice that set us free.
+- **Print Placements:** Front (left chest), Back (upper back)
+- **Description:** Heavyweight oversized tee on AS Colour 5080. UPL1FT mark on the left chest, crown of thorns across the upper back. A tribute to the sacrifice that set us free.
 - **Story:** "But he was pierced for our transgressions, he was crushed for our iniquities; the punishment that brought us peace was on him, and by his wounds we are healed." — Isaiah 53:5. His suffering was not in vain. Every wound carried purpose. Wear this truth.
 - **Sizes:** S, M, L, XL, 2XL, 3XL
 - **Images:** /images/products/his-pain-our-gain/

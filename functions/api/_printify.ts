@@ -48,9 +48,9 @@ export const DEFAULT_PRINTIFY_SHOP_ID = "27973036";
 // Site product id -> Printify product id (all AS Colour 5080, saved as drafts in Printify).
 export const PRINTIFY_PRODUCT_MAP: Record<string, string> = {
   "4": "6a34d07385a983abad0aae16", // IT IS WRITTEN
-  "2": "6a48f87392a4d3adbf008ffb", // COMFORT KILLS POTENTIAL
-  "3": "6a49199f92a4d3adbf009c24", // HIS PAIN, OUR GAIN
-  "1": "6a491bb162112a44f506f75c", // LIVE BY FAITH, NOT BY SIGHT
+  "2": "6abf196a5ec0de4bce034cdf", // COMFORT KILLS POTENTIAL
+  "3": "6abf2a8acc81509a510182e6", // HIS PAIN, OUR GAIN
+  "1": "6abf19a593d6f324e805d55d", // LIVE BY FAITH, NOT BY SIGHT
 };
 
 // Own-property lookup, so ids like "constructor" never match.

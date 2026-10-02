@@ -22,7 +22,8 @@ const compiled = ts.transpileModule(source, {
 }).outputText;
 const { products } = await import("data:text/javascript;base64," + Buffer.from(compiled).toString("base64"));
 
-const onDisk = (p) => existsSync(path.join(root, "public", p));
+// Photo addresses carry a version ("?v=2") so browsers fetch new photos at once.
+const onDisk = (p) => existsSync(path.join(root, "public", p.split("?")[0]));
 
 test("both catalogs list the same products", () => {
   assert.deepEqual(products.map((p) => p.id).sort(), Object.keys(server.PRODUCT_CATALOG).sort());
@@ -53,6 +54,15 @@ for (const product of products) {
       assert.ok(onDisk(serverImage), `server image for ${color} exists: ${serverImage}`);
     }
     assert.ok(onDisk(server.getCatalogProduct(product.id).image));
+  });
+
+  test(`${product.name}: photo addresses carry the current version`, () => {
+    const paths = new Set([...product.images, ...Object.values(product.colorImages || {}).flat()]);
+    for (const p of paths) assert.ok(p.endsWith(`?v=${server.PHOTO_VERSION}`), `${p} ends with ?v=${server.PHOTO_VERSION}`);
+    for (const color of product.colors) {
+      const fromServer = server.catalogImage(product.id, color);
+      assert.ok(paths.has(fromServer), `the server's ${color} photo is one the storefront shows: ${fromServer}`);
+    }
   });
 }
 

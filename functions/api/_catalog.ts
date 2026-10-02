@@ -19,10 +19,19 @@ export interface CatalogProduct {
 const SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
 const COLORS = ["Pine Green", "Black"];
 
+// Browsers keep product photos for hours. The version in the address makes them fetch
+// new photos at once: raise it whenever the files under public/images/products change,
+// here and in lib/data/products.ts (tests/catalog.test.mjs fails when they differ).
+export const PHOTO_VERSION = "2";
+
+function photo(file: string): string {
+  return `/images/products/${file}?v=${PHOTO_VERSION}`;
+}
+
 function colorImages(folder: string, view: string): Record<string, string> {
   return {
-    "Pine Green": `/images/products/${folder}/pine-${view}.jpg`,
-    Black: `/images/products/${folder}/black-${view}.jpg`,
+    "Pine Green": photo(`${folder}/pine-${view}.jpg`),
+    Black: photo(`${folder}/black-${view}.jpg`),
   };
 }
 
@@ -34,7 +43,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("it-is-written", "back"),
-    image: "/images/products/it-is-written/pine-back.jpg",
+    image: photo("it-is-written/pine-back.jpg"),
   },
   "2": {
     name: "COMFORT KILLS POTENTIAL",
@@ -43,7 +52,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("comfort-kills-potential", "back"),
-    image: "/images/products/comfort-kills-potential/pine-back.jpg",
+    image: photo("comfort-kills-potential/pine-back.jpg"),
   },
   "3": {
     name: "HIS PAIN, OUR GAIN",
@@ -52,7 +61,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("his-pain-our-gain", "back"),
-    image: "/images/products/his-pain-our-gain/pine-back.jpg",
+    image: photo("his-pain-our-gain/pine-back.jpg"),
   },
   "1": {
     name: "LIVE BY FAITH, NOT BY SIGHT",
@@ -61,7 +70,7 @@ export const PRODUCT_CATALOG: Record<string, CatalogProduct> = {
     colors: COLORS,
     sizes: SIZES,
     images: colorImages("live-by-faith", "front"),
-    image: "/images/products/live-by-faith/pine-front.jpg",
+    image: photo("live-by-faith/pine-front.jpg"),
   },
 };
 
