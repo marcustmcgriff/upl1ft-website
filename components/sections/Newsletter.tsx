@@ -56,7 +56,7 @@ export function Newsletter() {
         <div
           className="absolute inset-0 bg-center bg-no-repeat"
           style={{
-            backgroundImage: "url('/images/creation-of-adam.png')",
+            backgroundImage: "url('/images/creation-of-adam.webp')",
             backgroundSize: "cover",
             backgroundPosition: "center 35%",
           }}

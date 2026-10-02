@@ -8,9 +8,8 @@ export function CategoryTiles() {
       {/* Concrete Wall Background */}
       <div className="absolute inset-0 z-0">
         <div
-          className="absolute inset-0 bg-center bg-no-repeat"
+          className="absolute inset-0 bg-center bg-no-repeat bg-[url('/images/concrete-wall-1000.webp')] md:bg-[url('/images/concrete-wall.webp')]"
           style={{
-            backgroundImage: "url('/images/category-bg.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center 0%",
           }}

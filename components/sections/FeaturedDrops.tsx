@@ -24,9 +24,8 @@ export function FeaturedDrops() {
       {/* Saint Michael Background - Lower Portion */}
       <div className="absolute inset-0 z-0">
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 bg-[url('/images/st-michael-1200.webp')] md:bg-[url('/images/st-michael.webp')]"
           style={{
-            backgroundImage: "url('/images/st-michael.png')",
             backgroundSize: "cover",
             backgroundPosition: "center 80%",
           }}

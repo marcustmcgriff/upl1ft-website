@@ -9,10 +9,10 @@ export function Hero() {
     <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
       {/* Background with Saint Michael */}
       <div className="absolute inset-0 z-0">
+        {/* Light copies of st-michael.png: phones load the smaller one */}
         <div
-          className="absolute inset-0 bg-cover"
+          className="absolute inset-0 bg-cover bg-[url('/images/st-michael-1200.webp')] md:bg-[url('/images/st-michael.webp')]"
           style={{
-            backgroundImage: "url('/images/st-michael.png')",
             backgroundPosition: "center 25%",
           }}
         />

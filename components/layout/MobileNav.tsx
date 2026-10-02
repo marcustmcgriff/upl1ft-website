@@ -64,7 +64,7 @@ export function MobileNav({ isOpen, onClose, navLinks }: MobileNavProps) {
               className="block gold-glow mb-12"
             >
               <Image
-                src="/images/upl1ft-logo.png"
+                src="/images/upl1ft-logo.webp"
                 alt="UPL1FT"
                 width={120}
                 height={120}

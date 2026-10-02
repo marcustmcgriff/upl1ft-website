@@ -63,7 +63,7 @@ export function Footer() {
               className="block gold-glow mb-4"
             >
               <Image
-                src="/images/upl1ft-logo.png"
+                src="/images/upl1ft-logo.webp"
                 alt="UPL1FT"
                 width={120}
                 height={120}

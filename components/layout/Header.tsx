@@ -52,7 +52,7 @@ export function Header() {
               className="gold-glow-hover absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0"
             >
               <Image
-                src="/images/upl1ft-logo.png"
+                src="/images/upl1ft-logo.webp"
                 alt="UPL1FT"
                 width={120}
                 height={120}

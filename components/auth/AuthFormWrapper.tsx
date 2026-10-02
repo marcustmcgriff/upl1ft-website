@@ -22,7 +22,7 @@ export function AuthFormWrapper({
         <div className="text-center mb-8">
           <Link href="/" className="inline-block gold-glow-hover">
             <Image
-              src="/images/upl1ft-logo.png"
+              src="/images/upl1ft-logo.webp"
               alt="UPL1FT"
               width={120}
               height={120}

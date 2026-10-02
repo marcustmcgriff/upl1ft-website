@@ -40,6 +40,10 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {/* The hero background is the first thing a visitor sees, so it is fetched before the
+          stylesheet is read. The two widths match the md: switch in Hero.tsx. */}
+      <link rel="preload" as="image" href="/images/st-michael-1200.webp" media="(max-width: 767px)" fetchPriority="high" />
+      <link rel="preload" as="image" href="/images/st-michael.webp" media="(min-width: 768px)" fetchPriority="high" />
       <Hero />
       <FeaturedDrops />
       <Testimonials />
